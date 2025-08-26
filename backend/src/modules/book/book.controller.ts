@@ -9,7 +9,8 @@ import { RolesGuard } from 'src/common/guard/role.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { User, UserRole } from '../user/entities/user.entity';
 import { Response } from 'express';
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
+
 import { Readable } from 'stream';
 interface CustomRequest extends Request {
   user: User;

@@ -60,9 +60,9 @@ async function bootstrap() {
 app.enableCors({
   origin: (origin, callback) => {
     const allowedOrigins = [
-      'http://172.24.112.1:5173',
-      'http://localhost:5173',
-      "http://172.16.0.24:5173"
+      'https://egyan.ptgn.in',
+      'http://localhost:5173'
+    
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {
