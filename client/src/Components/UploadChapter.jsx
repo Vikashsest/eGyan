@@ -107,19 +107,25 @@ export default function UploadChapter() {
           />
 
           {/* File Upload */}
+          <div className="w-full">
+          <label>(Pdf/Videos/Audio)</label>
           <input
             type="file"
-            className="bg-[#2a2b39] border border-gray-500 rounded-lg p-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="bg-[#2a2b39] border border-gray-500 rounded-lg p-2 mt-1 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             onChange={(e) => setFile(e.target.files[0])}
           />
+          </div>
 
           {/* Thumbnail Upload */}
+          <div className="w-full">
+          <label>Thumbnail Image</label>
           <input
             type="file"
             accept="image/*"
-            className="bg-[#2a2b39] border border-gray-500 rounded-lg p-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="bg-[#2a2b39] border border-gray-500 rounded-lg p-2 mt-1 w-full text-white focus:outline-none focus:ring-2 focus:ring-green-400"
             onChange={(e) => setThumbnail(e.target.files[0])}
           />
+          </div>
 
           {/* Buttons */}
           <div className="flex justify-end w-full gap-3 mt-2">
