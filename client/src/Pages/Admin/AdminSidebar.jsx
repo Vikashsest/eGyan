@@ -8,6 +8,7 @@ import {
   FaSchool,
   FaBookOpen,
 } from "react-icons/fa";
+import { RiGitRepositoryFill } from "react-icons/ri";
 import { MdManageAccounts } from "react-icons/md";
 import { Link } from "react-router-dom";
 import Logout from "../Auth/Logout";
@@ -44,6 +45,21 @@ export default function Sidebar() {
               </Link>
               <Link
                 className="flex items-center space-x-2"
+                to="/admin/repository"
+              >
+                <li className="flex items-center space-x-2 text-gray-300">
+                  <RiGitRepositoryFill />
+                  <span>Repository</span>
+                </li>
+              </Link>
+               <Link className="flex items-center space-x-2" to="/admin-books">
+                <li className="flex items-center space-x-2 text-gray-300">
+                  <FaBook />
+                  <span> Manage Books</span>
+                </li>
+              </Link>
+              <Link
+                className="flex items-center space-x-2"
                 to="/admin/principals"
               >
                 <li className="flex items-center space-x-2 text-gray-300">
@@ -53,26 +69,11 @@ export default function Sidebar() {
               </Link>
               <Link
                 className="flex items-center space-x-2"
-                to="/admin/teachers"
-              >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaChalkboardTeacher />
-                  <span>Manage Teachers</span>
-                </li>
-              </Link>
-              <Link
-                className="flex items-center space-x-2"
                 to="/admin/students"
               >
                 <li className="flex items-center space-x-2 text-gray-300">
                   <FaUsers />
                   <span>Manage Students</span>
-                </li>
-              </Link>
-              <Link className="flex items-center space-x-2" to="/admin-books">
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaBook />
-                  <span> Manage Books</span>
                 </li>
               </Link>
               {/* <Link className="flex items-center space-x-2" to="/admin/reports">
@@ -90,8 +91,7 @@ export default function Sidebar() {
                   <span>Role Management</span>
                 </li>
               </Link>
-
-              <Link
+               <Link
                 className="flex items-center space-x-2"
                 to="/admin/upload-books"
               >
@@ -99,18 +99,6 @@ export default function Sidebar() {
                   <FaBookOpen />
                   <span>My Books</span>
                 </li>
-              </Link>
-              <Link>
-              <Link
-  className="flex items-center space-x-2"
-  to="/admin/repository"
->
-  <li className="flex items-center space-x-2 text-gray-300">
-    <FaFileAlt />
-    <span>Repository</span>
-  </li>
-</Link>
-
               </Link>
             </ul>
           </div>
