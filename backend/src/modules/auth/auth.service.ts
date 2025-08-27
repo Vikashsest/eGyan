@@ -93,19 +93,19 @@ export class AuthService {
       }
       const access_token = this.generateToken(user);
   
-  //  res.cookie('access_token', access_token, {
-  //     httpOnly: true,
-  //     secure: true, 
-  //     sameSite: 'none', 
-  //      maxAge: 7 * 24 * 60 * 60 * 1000, 
-  //   });
-  res.cookie('access_token', access_token, {
-  httpOnly: true,
-  secure: false,         // ✅ required for HTTP/IP
-  sameSite: 'lax',       // ✅ works without HTTPS
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-   path: '/'
-});
+   res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: true, 
+      sameSite: 'none', 
+       maxAge: 7 * 24 * 60 * 60 * 1000, 
+    });
+//   res.cookie('access_token', access_token, {
+//   httpOnly: true,
+//   secure: false,         // ✅ required for HTTP/IP
+//   sameSite: 'lax',       // ✅ works without HTTPS
+//   maxAge: 7 * 24 * 60 * 60 * 1000,
+//    path: '/'
+// });
 
       
       res.status(HttpStatus.OK).json({
