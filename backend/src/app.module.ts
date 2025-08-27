@@ -18,6 +18,7 @@ import { StudentModule } from './modules/student/student.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { NextcloudModule } from './modules/nextcloud/nextcloud.module';
+import { RepositoryModule } from './modules/repository/repository.module';
 
 
 
@@ -41,7 +42,8 @@ import { NextcloudModule } from './modules/nextcloud/nextcloud.module';
     AnalyticsModule,
     StudentModule,
     DashboardModule,
-    NextcloudModule
+    NextcloudModule,
+    RepositoryModule
     
   ],
   controllers: [AuthController],

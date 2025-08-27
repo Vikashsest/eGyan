@@ -488,35 +488,72 @@ async getChapterFileStream(bookId: number, chapterNumber: number) {
   };
 }
 
-async addChapter(
-  bookId: number,
-  body: { chapterNumber: number },
-  file?: Express.Multer.File,
-  thumbnail?: Express.Multer.File,
-): Promise<any> {
+// async addChapter(
+//   bookId: number,
+//   body: { chapterNumber: number },
+//   file?: Express.Multer.File,
+//   thumbnail?: Express.Multer.File,
+// ): Promise<any> {
+//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
+//   if (!book) throw new NotFoundException('Book not found');
+
+//   if (!file) throw new BadRequestException('Chapter PDF file is required');
+//   if (!thumbnail) throw new BadRequestException('Chapter thumbnail is required');
+
+//   let fileUrl: string;
+//   let thumbnailUrl: string;
+//   let totalPages: number | undefined;
+//   const pdfRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.pdf`;
+//   const uploadedPdfPath = await this.nextcloudService.uploadFile(file.path, pdfRemotePath);
+//   fileUrl = await generatePublicLink(uploadedPdfPath);
+//   try {
+//     totalPages = await getPdfTotalPages(file.path);
+//   } catch (error) {
+//     console.error('Error reading PDF pages:', error);
+//   }
+
+//   const thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
+
+
+// const uploadedThumbPath = await this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath);
+// thumbnailUrl = await generatePublicLink(uploadedThumbPath);
+
+//   const chapter = this.chapterRepo.create({
+//     chapterNumber: body.chapterNumber,
+//     fileUrl,
+//     thumbnail: thumbnailUrl,
+//     totalPages,
+//     book,
+//   });
+
+//   return this.chapterRepo.save(chapter);
+// }
+
+
+
+async addChapter(bookId: number, body: { chapterNumber: number }, file?: Express.Multer.File, thumbnail?: Express.Multer.File) {
   const book = await this.bookrepo.findOne({ where: { id: bookId } });
   if (!book) throw new NotFoundException('Book not found');
-
   if (!file) throw new BadRequestException('Chapter PDF file is required');
   if (!thumbnail) throw new BadRequestException('Chapter thumbnail is required');
 
-  let fileUrl: string;
-  let thumbnailUrl: string;
-  let totalPages: number | undefined;
   const pdfRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.pdf`;
-  const uploadedPdfPath = await this.nextcloudService.uploadFile(file.path, pdfRemotePath);
-  fileUrl = await generatePublicLink(uploadedPdfPath);
+  const thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
+  const [uploadedPdfPath, uploadedThumbPath] = await Promise.all([
+    this.nextcloudService.uploadFile(file.path, pdfRemotePath),
+    this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath),
+  ]);
+  const [fileUrl, thumbnailUrl] = await Promise.all([
+    generatePublicLink(uploadedPdfPath),
+    generatePublicLink(uploadedThumbPath),
+  ]);
+
+  let totalPages: number | undefined;
   try {
     totalPages = await getPdfTotalPages(file.path);
   } catch (error) {
     console.error('Error reading PDF pages:', error);
   }
-
-  const thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
-
-
-const uploadedThumbPath = await this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath);
-thumbnailUrl = await generatePublicLink(uploadedThumbPath);
 
   const chapter = this.chapterRepo.create({
     chapterNumber: body.chapterNumber,
@@ -528,9 +565,6 @@ thumbnailUrl = await generatePublicLink(uploadedThumbPath);
 
   return this.chapterRepo.save(chapter);
 }
-
-
-
 
 
 }

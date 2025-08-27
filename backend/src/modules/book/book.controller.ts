@@ -51,49 +51,69 @@ async uploadBook(
 }
 
 @Get('proxy/chapters/:bookId/chapter-:chapterNumber.pdf')
-async proxyChapterPdf(
+async proxyChapter(
   @Param('bookId') bookId: string,
   @Param('chapterNumber') chapterNumber: string,
+  @Req() req: Request,
   @Res() res: Response,
 ) {
   const url = `https://cloud.ptgn.in/c/remote.php/dav/files/egyan/books/${bookId}/chapters/chapter-${chapterNumber}.pdf`;
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization:
-        'Basic ' +
-        Buffer.from(
-          `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`,
-        ).toString('base64'),
-    },
-  });
+  const headers: Record<string, string> = {
+    Authorization:
+      'Basic ' +
+      Buffer.from(
+        `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`,
+      ).toString('base64'),
+  };
+
+  const rangeHeader = req.headers['range'] as string | undefined;
+  if (rangeHeader) {
+    headers['Range'] = rangeHeader;
+  }
+
+  const response = await fetch(url, { headers });
 
   if (!response.ok || !response.body) {
     throw new NotFoundException('File not found');
   }
 
-  res.setHeader('Content-Disposition', 'inline');
+  // ✅ Agar Nextcloud ne partial response diya
+  if (response.status === 206 || rangeHeader) {
+    res.status(206);
+    if (response.headers.get('content-range')) {
+      res.setHeader('Content-Range', response.headers.get('content-range'));
+    }
+  } else {
+    res.status(200);
+  }
+
+  res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader(
     'Content-Type',
     response.headers.get('content-type') || 'application/pdf',
   );
+  if (response.headers.get('content-length')) {
+    res.setHeader('Content-Length', response.headers.get('content-length'));
+  }
 
-  (response.body as any).pipe(res);
+  (response.body as NodeJS.ReadableStream).pipe(res);
 }
-@Get('proxy/chapters/:bookId/:chapterNumber.pdf')
-async proxyChapterFile(
-  @Param('bookId') bookId: number,
-  @Param('chapterNumber') chapterNumber: number,
-  @Res() res: Response,
-) {
-  const { stream, contentType } = await this.bookService.getChapterFileStream(
-    +bookId,
-    +chapterNumber,
-  );
 
-  res.setHeader('Content-Type', contentType || 'application/pdf');
-  stream.pipe(res);
-}
+// @Get('proxy/chapters/:bookId/:chapterNumber.pdf')
+// async proxyChapterFile(
+//   @Param('bookId') bookId: number,
+//   @Param('chapterNumber') chapterNumber: number,
+//   @Res() res: Response,
+// ) {
+//   const { stream, contentType } = await this.bookService.getChapterFileStream(
+//     +bookId,
+//     +chapterNumber,
+//   );
+
+//   res.setHeader('Content-Type', contentType || 'application/pdf');
+//   stream.pipe(res);
+// }
 
 
 @Get()
