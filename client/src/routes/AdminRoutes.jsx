@@ -10,6 +10,7 @@ import AdminProfile from "../Pages/Admin/AdminProfile";
 import SchoolOverview from "../Pages/Admin/SchoolOverview";
 import AdminReports from "../Pages/Admin/AdminReports";
 import AdminUploadBooks from "../Pages/Admin/AdminUploadBooks"
+import RepositoryManagement from "../Pages/Admin/RepositoryManagement";
 
 export const adminRouteList = [
   {
@@ -52,4 +53,13 @@ export const adminRouteList = [
     path: "/admin/upload-books",
     element: <ProtectedRoute allowedRoles={["admin"]}><AdminUploadBooks /></ProtectedRoute>
   },
+  {
+  path: "/admin/repository",
+  element: (
+    <ProtectedRoute allowedRoles={["admin"]}>
+      <RepositoryManagement/>
+    </ProtectedRoute>
+  ),
+},
+
 ];

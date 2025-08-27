@@ -100,6 +100,18 @@ export default function Sidebar() {
                   <span>My Books</span>
                 </li>
               </Link>
+              <Link>
+              <Link
+  className="flex items-center space-x-2"
+  to="/admin/repository"
+>
+  <li className="flex items-center space-x-2 text-gray-300">
+    <FaFileAlt />
+    <span>Repository</span>
+  </li>
+</Link>
+
+              </Link>
             </ul>
           </div>
         </nav>
