@@ -7,7 +7,7 @@ import { Response } from 'express';
 import * as jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ForgotPasswordDto } from '../user/dto/ForgotPasswordDto';
-import { use } from 'passport';
+
 dotenv.config();
 
 @Injectable()

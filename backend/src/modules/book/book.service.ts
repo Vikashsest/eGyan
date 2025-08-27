@@ -100,23 +100,33 @@ async findAll() {
     order: { uploadedAt: 'DESC' },
   });
 
- return books.map(book => {
-  const sortedChapters = book.chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
-  const firstChapter = sortedChapters[0];
-  return {
-    ...book,
-    thumbnail: firstChapter?.thumbnail || book.thumbnail || null,
-    fileUrl: firstChapter?.fileUrl || book.fileUrl || null,
-    chapters: sortedChapters.map(chap => ({
-      id: chap.id,
-      chapterNumber: chap.chapterNumber,
-      fileUrl: chap.fileUrl,
-      thumbnail: chap.thumbnail,
-    })),
-  };
-});
+  return books.map(book => {
+    const sortedChapters = book.chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
+    const firstChapter = sortedChapters[0];
 
+    return {
+      ...book,
+      thumbnail: firstChapter?.thumbnail || book.thumbnail || null,
+      fileUrl: firstChapter?.fileUrl || book.fileUrl || null,
+      thumbnailProxyUrl: book.thumbnail
+        ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(book.thumbnail)}`
+        : null,
+
+      chapters: sortedChapters.map(chap => ({
+        id: chap.id,
+        chapterNumber: chap.chapterNumber,
+        fileUrl: chap.fileUrl,
+
+        proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(chap.fileUrl)}`,
+        thumbnail: chap.thumbnail,
+        thumbnailProxyUrl: chap.thumbnail
+          ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(chap.thumbnail)}`
+          : null,
+      })),
+    };
+  });
 }
+
 
 
 
@@ -443,21 +453,26 @@ async updateBook(id: number, updateBookDto: UpdateBookDto, file?: Express.Multer
 async getChaptersByBookId(bookId: number): Promise<any[]> {
   const book = await this.bookrepo.findOne({ where: { id: bookId } });
   if (!book) throw new NotFoundException('Book not found');
-console.log("API_URL =>", process.env.API_URL);
 
   const chapters = await this.chapterRepo.find({
     where: { book: { id: bookId } },
     order: { chapterNumber: 'ASC' },
   });
+  console.log(chapters);
 
   return chapters.map(ch => ({
     id: ch.id,
     chapterNumber: ch.chapterNumber,
-    fileUrl: ch.fileUrl,  // direct Nextcloud URL
-    thumbnail: ch.thumbnail,  // direct Nextcloud thumbnail
-    resourceType: book.resourceType 
+    fileUrl: ch.fileUrl,
+    proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(ch.fileUrl)}`,
+    thumbnail: ch.thumbnail,
+    thumbnailProxyUrl: ch.thumbnail
+      ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(ch.thumbnail)}`
+      : null,
+    resourceType: book.resourceType,
   }));
 }
+
 async getChapterFileStream(bookId: number, chapterNumber: number) {
   const chapter = await this.chapterRepo.findOne({
     where: { book: { id: bookId }, chapterNumber },

@@ -57,22 +57,31 @@ async function bootstrap() {
 //   origin: 'http://192.168.2.115:5173',
 //   credentials: true,
 // });
+// app.enableCors({
+//   origin: (origin, callback) => {
+//     const allowedOrigins = [
+//       'https://egyan.ptgn.in',
+//       'http://localhost:5173'
+    
+//     ];
+
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error(`CORS error: origin ${origin} not allowed`));
+//     }
+//   },
+//   credentials: true,
+// });
 app.enableCors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      'https://egyan.ptgn.in',
-      'http://localhost:5173'
-    
-    ];
-
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS error: origin ${origin} not allowed`));
-    }
+    const allowedOrigins = ['https://egyan.ptgn.in', 'http://localhost:5173'];
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+    else callback(new Error(`CORS error: origin ${origin} not allowed`));
   },
   credentials: true,
 });
+
 
 
   app.useGlobalPipes(
