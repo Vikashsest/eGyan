@@ -82,50 +82,50 @@ const newBook = this.bookrepo.create({
 
 
 
-// async findAll() {
-//   const books = await this.bookrepo.find({
-//     relations: ['chapters'],
-//     order: { uploadedAt: "DESC" }
-//   });
-
-//   return books.map(book => ({
-//     ...book,
-//     thumbnail: book.chapters.length > 0 ? book.chapters[0].thumbnail : null
-//   }));
-// }
-
 async findAll() {
   const books = await this.bookrepo.find({
     relations: ['chapters'],
-    order: { uploadedAt: 'DESC' },
+    order: { uploadedAt: "DESC" }
   });
 
-  return books.map(book => {
-    const sortedChapters = book.chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
-    const firstChapter = sortedChapters[0];
-
-    return {
-      ...book,
-      thumbnail: firstChapter?.thumbnail || book.thumbnail || null,
-      fileUrl: firstChapter?.fileUrl || book.fileUrl || null,
-      thumbnailProxyUrl: book.thumbnail
-        ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(book.thumbnail)}`
-        : null,
-
-      chapters: sortedChapters.map(chap => ({
-        id: chap.id,
-        chapterNumber: chap.chapterNumber,
-        fileUrl: chap.fileUrl,
-
-        proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(chap.fileUrl)}`,
-        thumbnail: chap.thumbnail,
-        thumbnailProxyUrl: chap.thumbnail
-          ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(chap.thumbnail)}`
-          : null,
-      })),
-    };
-  });
+  return books.map(book => ({
+    ...book,
+    thumbnail: book.chapters.length > 0 ? book.chapters[0].thumbnail : null
+  }));
 }
+
+// async findAll() {
+//   const books = await this.bookrepo.find({
+//     relations: ['chapters'],
+//     order: { uploadedAt: 'DESC' },
+//   });
+
+//   return books.map(book => {
+//     const sortedChapters = book.chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
+//     const firstChapter = sortedChapters[0];
+
+//     return {
+//       ...book,
+//       thumbnail: firstChapter?.thumbnail || book.thumbnail || null,
+//       fileUrl: firstChapter?.fileUrl || book.fileUrl || null,
+//       thumbnailProxyUrl: book.thumbnail
+//         ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(book.thumbnail)}`
+//         : null,
+
+//       chapters: sortedChapters.map(chap => ({
+//         id: chap.id,
+//         chapterNumber: chap.chapterNumber,
+//         fileUrl: chap.fileUrl,
+
+//         proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(chap.fileUrl)}`,
+//         thumbnail: chap.thumbnail,
+//         thumbnailProxyUrl: chap.thumbnail
+//           ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(chap.thumbnail)}`
+//           : null,
+//       })),
+//     };
+//   });
+// }
 
 
 
