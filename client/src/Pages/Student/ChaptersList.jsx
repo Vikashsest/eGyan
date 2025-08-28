@@ -399,8 +399,8 @@ const ChaptersList = () => {
                 <div className="flex-1 overflow-hidden bg-black">
                   {viewData?.resourceType?.toLowerCase() === "pdf" && (
                     <FlipbookPDFViewer
-                      fileUrl={getCleanUrl(viewData.fileUrl)}
-                      bookId={viewData.bookId}
+                     fileUrl={viewData.proxyUrl}  
+                      chapter={viewData}
                     />
                   )}
                   {viewData?.resourceType?.toLowerCase() === "video" && (

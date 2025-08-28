@@ -6,7 +6,7 @@ import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
-export default function FlipbookPDF({ bookId: propBookId }) {
+export default function FlipbookPDF({ bookId: propBookId,chapter }) {
   const { bookId: paramBookId } = useParams();
   const bookId = propBookId || paramBookId;
 
@@ -23,7 +23,37 @@ export default function FlipbookPDF({ bookId: propBookId }) {
 
   const flipBookRef = useRef();
   const startTimeRef = useRef(Date.now());
+ useEffect(() => {
+    if (chapter) {
+      let url = chapter.proxyUrl || chapter.fileUrl;
 
+      // If Nextcloud public share link, add /download
+      if (url.includes("/s/") && !url.endsWith("/download")) {
+        url = url.replace(/\/+$/, "") + "/download";
+      }
+
+      // If proxy URL, also fix inner `url` param
+      if (url.includes("/proxy/file")) {
+        try {
+          const urlObj = new URL(url, window.location.origin);
+          const targetUrl = urlObj.searchParams.get("url");
+          if (targetUrl?.includes("/s/") && !targetUrl.endsWith("/download")) {
+            urlObj.searchParams.set(
+              "url",
+              targetUrl.replace(/\/+$/, "") + "/download"
+            );
+            url = urlObj.toString();
+          }
+        } catch (err) {
+          console.error("❌ Proxy URL parse error:", err);
+        }
+      }
+
+      setBookUrl(url);
+      setFileType(chapter.resourceType || "pdf");
+      setSelectedChapter(chapter);
+    }
+  }, [chapter]);
   // 📥 Fetch book chapters
   useEffect(() => {
     if (!bookId) return;
@@ -246,3 +276,224 @@ export default function FlipbookPDF({ bookId: propBookId }) {
   );
 }
 
+
+
+// import { useEffect, useState, useRef } from "react";
+// import { useParams } from "react-router-dom";
+// import HTMLFlipBook from "react-pageflip";
+// import * as pdfjsLib from "pdfjs-dist";
+
+// pdfjsLib.GlobalWorkerOptions.workerSrc =
+//   "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+
+// const API_URL = import.meta.env.VITE_API_URL;
+
+// export default function FlipbookPDF({ bookId: propBookId, chapter }) {
+//   const { bookId: paramBookId } = useParams();
+//   const bookId = propBookId || paramBookId;
+
+//   const [bookUrl, setBookUrl] = useState(null);
+//   const [fileType, setFileType] = useState(null);
+//   const [pages, setPages] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [flipbookWidth, setFlipbookWidth] = useState(800);
+//   const [flipbookHeight, setFlipbookHeight] = useState(700);
+//   const [selectedChapter, setSelectedChapter] = useState(null);
+//   const [currentPageIndex, setCurrentPageIndex] = useState(0);
+//   const [touchStartX, setTouchStartX] = useState(null);
+//   const [touchEndX, setTouchEndX] = useState(null);
+
+//   const flipBookRef = useRef();
+//   const startTimeRef = useRef(Date.now());
+
+//   // ✅ Fix: always enforce `/download` for Nextcloud share links
+//   useEffect(() => {
+//     if (chapter) {
+//       let url = chapter.proxyUrl || chapter.fileUrl;
+
+//       // If Nextcloud public share link, add /download
+//       if (url.includes("/s/") && !url.endsWith("/download")) {
+//         url = url.replace(/\/+$/, "") + "/download";
+//       }
+
+//       // If proxy URL, also fix inner `url` param
+//       if (url.includes("/proxy/file")) {
+//         try {
+//           const urlObj = new URL(url, window.location.origin);
+//           const targetUrl = urlObj.searchParams.get("url");
+//           if (targetUrl?.includes("/s/") && !targetUrl.endsWith("/download")) {
+//             urlObj.searchParams.set(
+//               "url",
+//               targetUrl.replace(/\/+$/, "") + "/download"
+//             );
+//             url = urlObj.toString();
+//           }
+//         } catch (err) {
+//           console.error("❌ Proxy URL parse error:", err);
+//         }
+//       }
+
+//       setBookUrl(url);
+//       setFileType(chapter.resourceType || "pdf");
+//       setSelectedChapter(chapter);
+//     }
+//   }, [chapter]);
+
+//   // 📖 PDF Loader
+//   useEffect(() => {
+//     if (!bookUrl || fileType !== "pdf") return;
+
+//     const loadPdf = async () => {
+//       try {
+//         const loadingTask = pdfjsLib.getDocument(bookUrl);
+//         const pdf = await loadingTask.promise;
+
+//         setPages([]);
+//         setLoading(false);
+
+//         for (let i = 1; i <= pdf.numPages; i++) {
+//           const page = await pdf.getPage(i);
+//           const viewport = page.getViewport({ scale: 1.2 });
+
+//           const canvas = document.createElement("canvas");
+//           const context = canvas.getContext("2d");
+//           canvas.width = viewport.width;
+//           canvas.height = viewport.height;
+
+//           await page.render({ canvasContext: context, viewport }).promise;
+//           setPages((prev) => [...prev, canvas.toDataURL()]);
+//         }
+//       } catch (error) {
+//         console.error("❌ Error loading PDF:", error);
+//       }
+//     };
+
+//     loadPdf();
+//   }, [bookUrl, fileType]);
+
+//   // 📏 Resize
+//   useEffect(() => {
+//     const handleResize = () => {
+//       setFlipbookWidth(window.innerWidth);
+//       setFlipbookHeight(window.innerHeight * 0.9);
+//     };
+//     handleResize();
+//     window.addEventListener("resize", handleResize);
+//     return () => window.removeEventListener("resize", handleResize);
+//   }, []);
+
+//   // ⌨️ Keyboard nav
+//   const isMobileLandscape =
+//     window.innerWidth > window.innerHeight && window.innerWidth <= 1024;
+//   const isDesktop = window.innerWidth > 1024;
+
+//   useEffect(() => {
+//     if (!(isDesktop || isMobileLandscape)) return;
+
+//     const handleKeyDown = (e) => {
+//       if (!flipBookRef.current) return;
+//       if (e.key === "ArrowRight") flipBookRef.current.pageFlip().flipNext();
+//       if (e.key === "ArrowLeft") flipBookRef.current.pageFlip().flipPrev();
+//     };
+
+//     window.addEventListener("keydown", handleKeyDown);
+//     return () => window.removeEventListener("keydown", handleKeyDown);
+//   }, [isDesktop, isMobileLandscape]);
+
+//   // 📊 Page flip log
+//   const handlePageFlip = (e) => {
+//     if (!selectedChapter) return;
+//     const pageIndex = e.data;
+//     const role = localStorage.getItem("role");
+//     if (role !== "student") return;
+
+//     const payload = {
+//       bookId: parseInt(bookId),
+//       chapterId: selectedChapter.id,
+//       timeSpent: Math.floor((Date.now() - startTimeRef.current) / 1000),
+//       resourceType: fileType?.toUpperCase(),
+//       pageNumber: pageIndex + 1,
+//       isCompleted: pageIndex + 1 === pages.length,
+//     };
+
+//     fetch(`${API_URL}/students/activity`, {
+//       method: "POST",
+//       credentials: "include",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload),
+//     }).catch((err) => console.error("❌ Activity log failed:", err));
+//   };
+
+//   // 📱 Swipe
+//   const handleSwipe = () => {
+//     if (!touchStartX || !touchEndX) return;
+//     const distance = touchStartX - touchEndX;
+//     const swipeThreshold = 50;
+
+//     if (distance > swipeThreshold && currentPageIndex < pages.length - 1) {
+//       setCurrentPageIndex(currentPageIndex + 1);
+//     } else if (distance < -swipeThreshold && currentPageIndex > 0) {
+//       setCurrentPageIndex(currentPageIndex - 1);
+//     }
+
+//     setTouchStartX(null);
+//     setTouchEndX(null);
+//   };
+
+//   return (
+//     <div className="relative w-full h-[calc(100vh-60px)] flex flex-col items-center bg-gray-100 overflow-auto">
+//       {loading && (
+//         <div className="absolute inset-0 flex justify-center items-center bg-white z-50">
+//           <div className="text-xl font-semibold text-gray-600 animate-pulse">
+//             ⏳ Loading PDF...
+//           </div>
+//         </div>
+//       )}
+
+//       {fileType === "pdf" ? (
+//         isDesktop || isMobileLandscape ? (
+//           <HTMLFlipBook
+//             width={flipbookWidth}
+//             height={flipbookHeight * 2.5}
+//             ref={flipBookRef}
+//             onFlip={handlePageFlip}
+//             className="shadow-lg"
+//           >
+//             {pages.map((src, i) => (
+//               <div
+//                 key={i}
+//                 className="w-full h-full flex justify-center items-center bg-white p-2 overflow-hidden"
+//               >
+//                 <img
+//                   src={src}
+//                   alt={`Page ${i + 1}`}
+//                   className="w-full h-full object-contain"
+//                 />
+//               </div>
+//             ))}
+//           </HTMLFlipBook>
+//         ) : (
+//           <div
+//             className="w-full h-full flex items-center justify-center relative bg-white"
+//             onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+//             onTouchMove={(e) => setTouchEndX(e.touches[0].clientX)}
+//             onTouchEnd={handleSwipe}
+//           >
+//             {pages.length > 0 && (
+//               <img
+//                 src={pages[currentPageIndex]}
+//                 alt={`Page ${currentPageIndex + 1}`}
+//                 className="w-full max-h-full object-contain"
+//               />
+//             )}
+//             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full">
+//               Page {currentPageIndex + 1} / {pages.length}
+//             </div>
+//           </div>
+//         )
+//       ) : (
+//         <p>Unsupported file format</p>
+//       )}
+//     </div>
+//   );
+// }
