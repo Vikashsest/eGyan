@@ -171,7 +171,7 @@ export async function addChapter(bookId, formData) {
  */
 export async function deleteChapter(chapterId) {
   try {
-    const res = await fetch(`${API_URL}/chapters/${chapterId}`, {
+    const res = await fetch(`${API_URL}/books/chapter/${chapterId}`, {
       method: "DELETE",
       credentials: "include",
       headers: { Authorization: `Bearer ${access_token}` },

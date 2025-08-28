@@ -1052,7 +1052,7 @@ const navigate = useNavigate();
   useEffect(() => {
     async function loadBooks() {
       const books = await fetchBooks();
-     console.log(books[0].fileUrl);
+
 
       
       setBookList(books);
@@ -1207,6 +1207,13 @@ navigate(`/books/${result.id}/chapters`);
                         className="text-yellow-400 hover:text-yellow-300 text-lg"
                       >
                         <FaEdit />
+                      </button>
+                       <button
+                        onClick={() => navigate(`/books/${b.id}/chapters`)}
+                        className="text-green-400 hover:text-green-300 text-lg"
+                        title="Manage Chapters"
+                      >
+                        📚
                       </button>
                       <button
                         onClick={() => handleDelete(b.id)}
@@ -1519,14 +1526,13 @@ navigate(`/books/${result.id}/chapters`);
           <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex justify-center items-center">
             <div className="relative w-full h-full flex items-center justify-center">
               <div className="relative bg-white/10 backdrop-blur-md shadow-2xl rounded-xl border border-white/20 w-[95%] h-[90%] max-w-6xl max-h-[95%] overflow-hidden flex flex-col view-modal-container">
-                <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/20">
+                <div className="flex items-center justify-between px-6 py-2 bg-white/5 border-b border-white/20">
                   <h2 className="text-xl font-bold text-white">
-                   <button
-               onClick={() => {  navigate(`/books/${viewData.id}`);}}
+                   <h3
                     className="w-full text-sm text-blue-400 hover:text-blue-300 font-semibold"
                   >
                     {getViewLabel(viewData.resourceType)}
-                  </button>
+                  </h3>
                   </h2>
                   <div className="flex items-center gap-4">
                     {(viewData.resourceType?.toLowerCase() === "pdf" ||
