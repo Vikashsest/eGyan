@@ -291,7 +291,7 @@
 
 
 
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, UseGuards, BadRequestException, Req, NotFoundException, HttpException, Res, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, UseGuards, BadRequestException, Req, NotFoundException, HttpException, Res, HttpStatus, Query, ParseIntPipe } from '@nestjs/common';
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
@@ -386,36 +386,80 @@ export class BookController {
     (response.body as NodeJS.ReadableStream).pipe(res);
   }
 
-  @Get('proxy/file')
-  async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
-    if (!url) throw new BadRequestException('url query param required');
+  // @Get('proxy/file')
+  // async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
+  //   if (!url) throw new BadRequestException('url query param required');
 
-    try {
-      const headers: Record<string, string> = {};
-      const rangeHeader = req.headers['range'] as string | undefined;
-      if (rangeHeader) headers['Range'] = rangeHeader;
-      if (url.includes('/remote.php/dav')) {
-        headers['Authorization'] = 'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
-      }
+  //   try {
+  //     const headers: Record<string, string> = {};
+  //     const rangeHeader = req.headers['range'] as string | undefined;
+  //     if (rangeHeader) headers['Range'] = rangeHeader;
+  //     if (url.includes('/remote.php/dav')) {
+  //       headers['Authorization'] = 'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
+  //     }
 
-      const response = await fetch(url, { headers });
-      if (!response.ok || !response.body) throw new NotFoundException('File not found');
+  //     const response = await fetch(url, { headers });
+  //     if (!response.ok || !response.body) throw new NotFoundException('File not found');
 
-      if (response.status === 206 || rangeHeader) {
-        res.status(206);
-        if (response.headers.get('content-range')) res.setHeader('Content-Range', response.headers.get('content-range'));
-      } else res.status(200);
+  //     if (response.status === 206 || rangeHeader) {
+  //       res.status(206);
+  //       if (response.headers.get('content-range')) res.setHeader('Content-Range', response.headers.get('content-range'));
+  //     } else res.status(200);
 
-      res.setHeader('Accept-Ranges', 'bytes');
-      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
-      if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
+  //     res.setHeader('Accept-Ranges', 'bytes');
+  //     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
+  //     if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
 
-      (response.body as NodeJS.ReadableStream).pipe(res);
-    } catch (err) {
-      console.error('Proxy error:', err.message);
-      throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
+  //     (response.body as NodeJS.ReadableStream).pipe(res);
+  //   } catch (err) {
+  //     console.error('Proxy error:', err.message);
+  //     throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
+  //   }
+  // }
+ 
+@Get('proxy/file')
+async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
+  if (!url) throw new BadRequestException('url query param required');
+
+  try {
+    // Transform public share links to direct download
+    if (url.includes('/index.php/s/')) {
+      if (!url.endsWith('/download')) url = url.replace(/\/+$/, '') + '/download';
     }
+
+    // Setup headers
+    const headers: Record<string, string> = {};
+    const rangeHeader = req.headers['range'] as string | undefined;
+    if (rangeHeader) headers['Range'] = rangeHeader;
+
+    // Internal DAV URLs need Basic Auth
+    if (url.includes('/remote.php/dav')) {
+      headers['Authorization'] =
+        'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
+    }
+
+    // Fetch file from Nextcloud
+    const response = await fetch(url, { headers, redirect: 'follow' });
+
+    // Make sure we got the file
+    if (!response.ok || !response.body) throw new NotFoundException('File not found');
+
+    // Stream file with proper headers
+    res.status(response.status);
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'application/pdf');
+    if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
+    if (response.headers.get('content-range')) res.setHeader('Content-Range', response.headers.get('content-range'));
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    (response.body as NodeJS.ReadableStream).pipe(res);
+  } catch (err) {
+    console.error('Proxy error:', err.message);
+    throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
   }
+}
+
+
+
 
   @Get('proxy/thumbnail')
   async proxyThumbnail(@Query('url') url: string, @Res() res: Response) {
@@ -473,6 +517,10 @@ export class BookController {
   @Roles(UserRole.ADMIN, UserRole.PRINCIPAL, UserRole.TEACHER)
   async deleteBook(@Param('id') id: number) {
     return this.bookService.remove(id);
+  }
+   @Delete('chapter/:id')
+  async deleteChapter(@Param('id', ParseIntPipe) id: number) {
+    return this.bookService.deleteChapter(id);
   }
 
   // ----------------- FIND ALL (LAST) -----------------

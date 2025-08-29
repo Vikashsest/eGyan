@@ -458,7 +458,7 @@ async getChaptersByBookId(bookId: number): Promise<any[]> {
     where: { book: { id: bookId } },
     order: { chapterNumber: 'ASC' },
   });
-  console.log(chapters);
+
 
   return chapters.map(ch => ({
     id: ch.id,
@@ -473,6 +473,38 @@ async getChaptersByBookId(bookId: number): Promise<any[]> {
   }));
 }
 
+// async getChapterFileStream(bookId: number, chapterNumber: number) {
+//   const chapter = await this.chapterRepo.findOne({
+//     where: { book: { id: bookId }, chapterNumber },
+//   });
+
+//   if (!chapter || !chapter.fileUrl) {
+//     throw new NotFoundException('Chapter file not found');
+//   }
+
+//   const response = await fetch(chapter.fileUrl, {
+//     headers: {
+//       Authorization:
+//         'Basic ' +
+//         Buffer.from(
+//           `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`,
+//         ).toString('base64'),
+//     },
+//   });
+
+//   if (!response.ok || !response.body) {
+//     throw new BadRequestException('Unable to fetch file');
+//   }
+
+//   const nodeStream = Readable.fromWeb(response.body as any);
+//   return {
+//     stream: nodeStream,
+//     contentType: response.headers.get('content-type'),
+//   };
+// }
+
+
+
 async getChapterFileStream(bookId: number, chapterNumber: number) {
   const chapter = await this.chapterRepo.findOne({
     where: { book: { id: bookId }, chapterNumber },
@@ -482,12 +514,18 @@ async getChapterFileStream(bookId: number, chapterNumber: number) {
     throw new NotFoundException('Chapter file not found');
   }
 
-  const response = await fetch(chapter.fileUrl, {
+  // Transform public share URL to direct download
+  let url = chapter.fileUrl;
+  if (url.includes('/index.php/s/') && !url.endsWith('/download')) {
+    url = url.replace(/\/+$/, '') + '/download';
+  }
+
+  const response = await fetch(url, {
     headers: {
       Authorization:
         'Basic ' +
         Buffer.from(
-          `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`,
+          `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`
         ).toString('base64'),
     },
   });
@@ -496,12 +534,27 @@ async getChapterFileStream(bookId: number, chapterNumber: number) {
     throw new BadRequestException('Unable to fetch file');
   }
 
-  const nodeStream = Readable.fromWeb(response.body as any);
   return {
-    stream: nodeStream,
-    contentType: response.headers.get('content-type'),
+    stream: Readable.fromWeb(response.body as any),
+    contentType: response.headers.get('content-type') || 'application/pdf',
   };
 }
+
+async deleteChapter(chapterId: number): Promise<{ message: string }> {
+ 
+  const chapter = await this.chapterRepo.findOne({ where: { id: chapterId }, relations: ['book'] });
+  if (!chapter) {
+    throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
+  }
+
+ 
+
+  await this.chapterRepo.delete(chapterId);
+
+  return { message: `Chapter ${chapter.chapterNumber} of book "${chapter.book.bookName}" deleted successfully` };
+}
+
+
 
 // async addChapter(
 //   bookId: number,
