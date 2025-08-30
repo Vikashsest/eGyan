@@ -1698,47 +1698,52 @@ export default function ManageBooksPage({ role, Navbar, Sidebar }) {
     }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    const uploadData = new FormData();
-    uploadData.append("bookName", formData.bookName);
-    uploadData.append("category", formData.category);
-    uploadData.append("subject", formData.subject);
-    uploadData.append("educationLevel", formData.educationLevel);
-    uploadData.append("language", formData.language);
-    if (formData.file) uploadData.append("file", formData.file);
-    if (formData.thumbnail) uploadData.append("thumbnail", formData.thumbnail);
+  
+const handleUpload = async (e) => {
+  e.preventDefault();
 
-    try {
-      const result = await fetch(`${API_URL}/books`, {
-        method: "POST",
-        body: uploadData,
-        credentials: "include",
-      }).then((res) => res.json());
+  const uploadData = new FormData();
+  uploadData.append("bookName", formData.bookName);
+  uploadData.append("category", formData.category);
+  uploadData.append("subject", formData.subject);
+  uploadData.append("educationLevel", formData.educationLevel);
+  uploadData.append("language", formData.language);
+  // uploadData.append("resourceType", formData.resourceType);
+  if (formData.file) uploadData.append("file", formData.file);
+  if (formData.thumbnail) uploadData.append("thumbnail", formData.thumbnail);
 
-      if (result && result.id) {
-        setBookList((prev) => [...prev, result]);
-        setShowUploadModal(false);
-        setFormData({
-          bookName: "",
-          subject: "",
-          educationLevel: "",
-          language: "",
-          category: "",
-          file: null,
-          thumbnail: null,
-        });
-        navigate(`/books/${result.id}/chapters`);
-        toast.success("Book uploaded successfully ✅");
-      } else {
-        toast.error("Upload failed ❌");
-      }
-    } catch (error) {
-      toast.error("Something went wrong during upload ❌");
-      console.error("Upload Error:", error);
+  try {
+    const result = await uploadBook(uploadData);
+
+    if (result && result.id) {
+      setBookList((prev) => [...prev, result]);
+      setShowUploadModal(false);
+      setFormData({
+        
+        bookName: "",
+        subject: "",
+      
+        educationLevel: "",
+        language: "",
+        
+         category: "",
+        file: null,
+        thumbnail: null,
+      });
+navigate(`/books/${result.id}/chapters`);
+
+
+      toast.success("Book uploaded successfully ✅");
+    } else {
+      toast.error("Upload failed ❌");
     }
-  };
+  } catch (error) {
+    toast.error("Something went wrong during upload ❌");
+    console.error("Upload Error:", error);
+  }
+};
 
+ 
   const getViewLabel = (type) => {
     switch (type?.toLowerCase()) {
       case "pdf":
