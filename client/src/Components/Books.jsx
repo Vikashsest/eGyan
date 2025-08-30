@@ -1855,6 +1855,306 @@ export default function ManageBooksPage({ role, Navbar, Sidebar }) {
             ))}
         </div>
 
+
+
+        {showUploadModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
+    <div className="bg-white text-black rounded-lg w-[95%] max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-lg">
+      <h2 className="text-2xl font-semibold mb-4 text-center">
+        📤 Upload Book
+      </h2>
+
+      <form className="grid gap-4" onSubmit={handleUpload}>
+        {/* Resource Type Dropdown */}
+        {/* <div>
+          <label className="text-sm font-medium">Resource Type</label>
+          <select
+            name="resourceType"
+            className="w-full border border-gray-300 p-2 rounded text-sm"
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                resourceType: e.target.value,
+              }))
+            }
+            required
+          >
+            <option value="">Select Resource Type</option>
+            <option value="pdf">PDF</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+          </select>
+        </div> */}
+
+        {/* Book Name */}
+        <input
+          type="text"
+          name="bookName"
+          placeholder="Book Name"
+          className="w-full border border-gray-300 p-2 rounded text-sm"
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              bookName: e.target.value,
+            }))
+          }
+          required
+        />
+
+        {/* Subject */}
+        <input
+          type="text"
+          name="subject"
+          placeholder="Subject"
+          className="w-full border border-gray-300 p-2 rounded text-sm"
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              subject: e.target.value,
+            }))
+          }
+        />
+
+        <div>
+        <label className="text-sm font-medium">Education Level</label>
+        <select
+            name="educationLevel"
+            className="w-full border border-gray-300 p-2 rounded text-sm"
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                educationLevel: e.target.value,
+              }))
+            }
+            required
+          >
+            <option value="">Select Classes</option>
+  {Array.from({ length: 12 }, (_, i) => (
+    <option key={i + 1} value={`Class ${i + 1}`}>
+      Class {i + 1}
+    </option>
+  ))}
+          </select>
+        </div>
+
+        {/* Language Dropdown */}
+        <div>
+          <label className="text-sm font-medium">Language</label>
+          <select
+            name="language"
+            className="w-full border border-gray-300 p-2 rounded text-sm"
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                language: e.target.value,
+              }))
+            }
+            required
+          >
+            <option value="">Select Language</option>
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
+          </select>
+        </div>
+
+        
+        <div>
+          <label className="text-sm font-medium">Category</label>
+          <select
+            name="category"
+            className="w-full border border-gray-300 p-2 rounded text-sm"
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                category: e.target.value,
+              }))
+            }
+            required
+          >
+            <option value="">Select Education Level</option>
+            <option value="School Education">School Education</option>
+          </select>
+        </div>
+
+        {/* Thumbnail Upload */}
+        <div>
+          <label className="text-sm font-medium">Thumbnail Image</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="w-full border p-2 rounded text-sm"
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                thumbnail: e.target.files[0],
+              }))
+            }
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-3 mt-4">
+          <button
+            type="button"
+            onClick={() => setShowUploadModal(false)}
+            className="px-4 py-1 border rounded hover:bg-gray-100"
+          >
+            ❌ Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            ✅ Upload
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+
+        {editData && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
+            <div className="bg-white text-black rounded-lg w-[95%] max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-center">
+                ✏️ Edit Book
+              </h2>
+
+              <form
+                className="grid gap-4"
+          onSubmit={async (e) => {
+  e.preventDefault();
+
+  const allowedFields = [
+    "bookName",
+    "category",
+    "subject",
+    "educationLevel",
+    "language",
+    // "stateBoard",
+    "resourceType",
+    // "chapter",
+    "file",       
+    "thumbnail",  
+    "totalPages"  
+  ];
+
+  const fd = new FormData();
+
+  allowedFields.forEach((key) => {
+    if (editData[key] !== undefined && editData[key] !== null) {
+      fd.append(key, editData[key]);
+    }
+  });
+
+  try {
+    const res = await fetch(`${API_URL}/books/${editData.id}`, {
+      method: "PATCH",
+      body: fd,
+      credentials: "include",
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+    setBookList((prev) =>
+  prev.map((book) =>
+    book.id === editData.id ? result.book || result : book
+  )
+);
+      setEditData(null);
+      toast.success("✅ Book updated");
+    } else {
+      toast.error(result.message || "Update failed ❌");
+    }
+  } catch (err) {
+    console.error("Update error:", err);
+    toast.error("Something went wrong ❗");
+  }
+}}
+
+              >
+                {[
+                  "bookName",
+                  // "chapter",
+                  "subject",
+                  "category",
+                  "educationLevel",
+                  "language",
+                  // "stateBoard",
+                  "resourceType",
+                ].map((key) => (
+                  <input
+                    key={key}
+                    type="text"
+                    name={key}
+                    value={editData[key] || ""}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                    placeholder={key}
+                    className="w-full border border-gray-300 p-2 rounded text-sm"
+                    // required
+                  />
+                ))}
+
+                {/* <div>
+                  <label className="text-sm font-medium">
+                    Main File (PDF / Video / Audio)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,video/*,audio/*"
+                    className="w-full border p-2 rounded text-sm"
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        file: e.target.files[0],
+                      }))
+                    }
+                  />
+                </div> */}
+                <div>
+                  <label className="text-sm font-medium">Thumbnail Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full border p-2 rounded text-sm"
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        thumbnail: e.target.files[0],
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditData(null)}
+                    className="px-4 py-1 border rounded hover:bg-gray-100"
+                  >
+                    ❌ Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    ✅ Update
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+
+
+
         {/* View Modal */}
         {viewData && selectedChapter && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex justify-center items-center">

@@ -839,32 +839,62 @@ export default function FlipbookPDF({ bookId: propBookId, chapter }) {
   }, []);
 
   // 📊 Track page flips
-  const handlePageFlip = (e) => {
-    if (!selectedChapter) return;
-    const pageIndex = e.data;
-    const role = localStorage.getItem("role");
-    if (role !== "student") return;
+  // const handlePageFlip = (e) => {
+  //   if (!selectedChapter) return;
+  //   const pageIndex = e.data;
+  //   const role = localStorage.getItem("role");
+  //   if (role !== "student") return;
 
-    const currentPage = pageIndex + 1;
-    const payload = {
-      bookId: parseInt(bookId),
-      chapterId: selectedChapter.id,
-      timeSpent: Math.floor((Date.now() - startTimeRef.current) / 1000),
-      resourceType: fileType?.toUpperCase(),
-      pageNumber: currentPage,
-      isCompleted: currentPage === pages.length,
-    };
+  //   const currentPage = pageIndex + 1;
+  //   const payload = {
+  //     bookId: parseInt(bookId),
+  //     chapterId: selectedChapter.id,
+  //     timeSpent: Math.floor((Date.now() - startTimeRef.current) / 1000),
+  //     resourceType: fileType?.toUpperCase(),
+  //     pageNumber: currentPage,
+  //     isCompleted: currentPage === pages.length,
+  //   };
 
-    fetch(`${import.meta.env.VITE_API_URL}/students/activity`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => res.json())
-      .then((data) => console.log("✅ Activity logged:", data))
-      .catch((err) => console.error("❌ Failed to log activity:", err));
+  //   fetch(`${import.meta.env.VITE_API_URL}/students/activity`, {
+  //     method: "POST",
+  //     credentials: "include",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(payload),
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data) => console.log("✅ Activity logged:", data))
+  //     .catch((err) => console.error("❌ Failed to log activity:", err));
+  // };
+const handlePageFlip = (e) => {
+  const pageIndex = e.data;
+  setCurrentPageIndex(pageIndex);
+
+  const chapterData = chapter || selectedChapter;
+  if (!chapterData) return;
+
+  const role = localStorage.getItem("role");
+  if (role !== "student") return;
+
+  const currentPage = pageIndex + 1;
+  const payload = {
+    bookId: parseInt(bookId),
+    chapterId: chapterData.id,
+    timeSpent: Math.floor((Date.now() - startTimeRef.current) / 1000),
+    resourceType: fileType?.toUpperCase(),
+    pageNumber: currentPage,
+    isCompleted: currentPage === pages.length,
   };
+
+  fetch(`${import.meta.env.VITE_API_URL}/students/activity`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => res.json())
+    .then((data) => console.log("✅ Activity logged:", data))
+    .catch((err) => console.error("❌ Failed to log activity:", err));
+};
 
   // 📱 Swipe navigation
   const handleSwipe = () => {
