@@ -416,35 +416,31 @@ export class BookController {
   //     throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
   //   }
   // }
- 
-@Get('proxy/file')
+
+
+  @Get('proxy/file')
 async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
   if (!url) throw new BadRequestException('url query param required');
 
   try {
-    // Transform public share links to direct download
+    // Public share ko force direct download
     if (url.includes('/index.php/s/')) {
       if (!url.endsWith('/download')) url = url.replace(/\/+$/, '') + '/download';
     }
 
-    // Setup headers
     const headers: Record<string, string> = {};
     const rangeHeader = req.headers['range'] as string | undefined;
     if (rangeHeader) headers['Range'] = rangeHeader;
 
-    // Internal DAV URLs need Basic Auth
     if (url.includes('/remote.php/dav')) {
       headers['Authorization'] =
         'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
     }
 
-    // Fetch file from Nextcloud
     const response = await fetch(url, { headers, redirect: 'follow' });
 
-    // Make sure we got the file
     if (!response.ok || !response.body) throw new NotFoundException('File not found');
 
-    // Stream file with proper headers
     res.status(response.status);
     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/pdf');
     if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
@@ -457,6 +453,48 @@ async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Resp
     throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
   }
 }
+
+ 
+// @Get('proxy/file')
+// async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
+//   if (!url) throw new BadRequestException('url query param required');
+
+//   try {
+//     // Transform public share links to direct download
+//     if (url.includes('/index.php/s/')) {
+//       if (!url.endsWith('/download')) url = url.replace(/\/+$/, '') + '/download';
+//     }
+
+//     // Setup headers
+//     const headers: Record<string, string> = {};
+//     const rangeHeader = req.headers['range'] as string | undefined;
+//     if (rangeHeader) headers['Range'] = rangeHeader;
+
+//     // Internal DAV URLs need Basic Auth
+//     if (url.includes('/remote.php/dav')) {
+//       headers['Authorization'] =
+//         'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
+//     }
+
+//     // Fetch file from Nextcloud
+//     const response = await fetch(url, { headers, redirect: 'follow' });
+
+//     // Make sure we got the file
+//     if (!response.ok || !response.body) throw new NotFoundException('File not found');
+
+//     // Stream file with proper headers
+//     res.status(response.status);
+//     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/pdf');
+//     if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
+//     if (response.headers.get('content-range')) res.setHeader('Content-Range', response.headers.get('content-range'));
+//     res.setHeader('Accept-Ranges', 'bytes');
+
+//     (response.body as NodeJS.ReadableStream).pipe(res);
+//   } catch (err) {
+//     console.error('Proxy error:', err.message);
+//     throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
+//   }
+// }
 
 
 
@@ -496,15 +534,37 @@ async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Resp
     return book;
   }
 
-  @Post(':id/chapters')
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'file', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }], multerConfig))
-  async addChapter(
-    @Param('id') bookId: string,
-    @UploadedFiles() files: { file?: Express.Multer.File[]; thumbnail?: Express.Multer.File[] },
-    @Body() body: { chapterNumber: number },
-  ) {
-    return this.bookService.addChapter(+bookId, body, files.file?.[0], files.thumbnail?.[0]);
-  }
+@Post(':id/chapters')
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [
+      { name: 'file', maxCount: 1 },        // PDF
+      { name: 'thumbnail', maxCount: 1 },   // Thumbnail image
+      { name: 'video', maxCount: 1 },       // Optional video
+      { name: 'audio', maxCount: 1 },       // Optional audio
+    ],
+    multerConfig
+  )
+)
+async addChapter(
+  @Param('id') bookId: string,
+  @UploadedFiles()
+  files: {
+    file?: Express.Multer.File[];
+    thumbnail?: Express.Multer.File[];
+    video?: Express.Multer.File[];
+    audio?: Express.Multer.File[];
+  },
+  @Body() body: { chapterNumber: number }
+) {
+  return this.bookService.addChapter(
+    +bookId,
+    body,
+    files.file?.[0],
+    files.thumbnail?.[0],
+  );
+}
+
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.PRINCIPAL)

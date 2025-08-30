@@ -19,8 +19,8 @@ language: string;
 @IsString()
 @IsOptional()
 stateBoard?: string;
-@IsString()
-resourceType: string;
+// @IsString()
+// resourceType: string;
 @IsOptional()
 fileUrl?: string;
 @IsOptional()

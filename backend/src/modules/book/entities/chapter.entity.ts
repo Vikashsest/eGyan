@@ -16,6 +16,8 @@ export class Chapter {
   totalPages: number;
 @OneToMany(() => StudentActivity, (activity) => activity.chapter)
 activities: StudentActivity[];
+@Column({ nullable: false, default: 'pdf' })
+resourceType: string;
 
   @Column({ nullable: true })
   fileUrl: string;

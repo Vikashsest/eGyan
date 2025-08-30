@@ -71,7 +71,7 @@ const newBook = this.bookrepo.create({
         'educationLevel',
         'language',
         'stateBoard',
-        'resourceType',
+        // 'resourceType',
         'fileUrl',
         'thumbnail',
         'uploadedAt',
@@ -259,7 +259,7 @@ async getBooksByCategory(category: string) {
       'educationLevel',
       'language',
       'stateBoard',
-      'resourceType',
+      // 'resourceType',
       'fileUrl',
       'thumbnail',
       'uploadedAt',
@@ -460,17 +460,29 @@ async getChaptersByBookId(bookId: number): Promise<any[]> {
   });
 
 
+  // return chapters.map(ch => ({
+  //   id: ch.id,
+  //   chapterNumber: ch.chapterNumber,
+  //   fileUrl: ch.fileUrl,
+  //   proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(ch.fileUrl)}`,
+  //   thumbnail: ch.thumbnail,
+  //   thumbnailProxyUrl: ch.thumbnail
+  //     ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(ch.thumbnail)}`
+  //     : null,
+  //   // resourceType: chapters.resourceType,
+  // }));
   return chapters.map(ch => ({
-    id: ch.id,
-    chapterNumber: ch.chapterNumber,
-    fileUrl: ch.fileUrl,
-    proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(ch.fileUrl)}`,
-    thumbnail: ch.thumbnail,
-    thumbnailProxyUrl: ch.thumbnail
-      ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(ch.thumbnail)}`
-      : null,
-    resourceType: book.resourceType,
-  }));
+  id: ch.id,
+  chapterNumber: ch.chapterNumber,
+  fileUrl: ch.fileUrl,
+  proxyUrl: `${process.env.API_URL}/books/proxy/file?url=${encodeURIComponent(ch.fileUrl)}`,
+  thumbnail: ch.thumbnail,
+  thumbnailProxyUrl: ch.thumbnail
+    ? `${process.env.API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(ch.thumbnail)}`
+    : null,
+  resourceType: ch.resourceType || 'pdf', // ✅ add resourceType, default pdf
+}));
+
 }
 
 // async getChapterFileStream(bookId: number, chapterNumber: number) {
@@ -599,40 +611,93 @@ async deleteChapter(chapterId: number): Promise<{ message: string }> {
 
 
 
-async addChapter(bookId: number, body: { chapterNumber: number }, file?: Express.Multer.File, thumbnail?: Express.Multer.File) {
+// async addChapter(bookId: number, body: { chapterNumber: number }, file?: Express.Multer.File, thumbnail?: Express.Multer.File) {
+//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
+//   if (!book) throw new NotFoundException('Book not found');
+//   if (!file) throw new BadRequestException('Chapter PDF file is required');
+//   if (!thumbnail) throw new BadRequestException('Chapter thumbnail is required');
+
+//   const pdfRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.pdf`;
+//   const thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
+//   const [uploadedPdfPath, uploadedThumbPath] = await Promise.all([
+//     this.nextcloudService.uploadFile(file.path, pdfRemotePath),
+//     this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath),
+//   ]);
+//   const [fileUrl, thumbnailUrl] = await Promise.all([
+//     generatePublicLink(uploadedPdfPath),
+//     generatePublicLink(uploadedThumbPath),
+//   ]);
+
+//   let totalPages: number | undefined;
+//   try {
+//     totalPages = await getPdfTotalPages(file.path);
+//   } catch (error) {
+//     console.error('Error reading PDF pages:', error);
+//   }
+
+//   const chapter = this.chapterRepo.create({
+//     chapterNumber: body.chapterNumber,
+//     fileUrl,
+//     thumbnail: thumbnailUrl,
+//     totalPages,
+//     book,
+//   });
+
+//   return this.chapterRepo.save(chapter);
+// }
+
+async addChapter(
+  bookId: number,
+  body: { chapterNumber: number ,resourceType?: 'pdf' | 'video' | 'audio'},
+  file?: Express.Multer.File,
+  thumbnail?: Express.Multer.File,
+) {
   const book = await this.bookrepo.findOne({ where: { id: bookId } });
   if (!book) throw new NotFoundException('Book not found');
-  if (!file) throw new BadRequestException('Chapter PDF file is required');
-  if (!thumbnail) throw new BadRequestException('Chapter thumbnail is required');
+  if (!file) throw new BadRequestException('Chapter file is required');
 
-  const pdfRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.pdf`;
-  const thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
-  const [uploadedPdfPath, uploadedThumbPath] = await Promise.all([
-    this.nextcloudService.uploadFile(file.path, pdfRemotePath),
-    this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath),
-  ]);
-  const [fileUrl, thumbnailUrl] = await Promise.all([
-    generatePublicLink(uploadedPdfPath),
-    generatePublicLink(uploadedThumbPath),
-  ]);
-
-  let totalPages: number | undefined;
-  try {
-    totalPages = await getPdfTotalPages(file.path);
-  } catch (error) {
-    console.error('Error reading PDF pages:', error);
+ 
+  const extension = file.originalname.split('.').pop()?.toLowerCase();
+  let fileRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.${extension}`;
+  let thumbRemotePath: string | undefined;
+  if (thumbnail) {
+    thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
   }
 
-  const chapter = this.chapterRepo.create({
-    chapterNumber: body.chapterNumber,
-    fileUrl,
-    thumbnail: thumbnailUrl,
-    totalPages,
-    book,
-  });
+  const uploadedFilePath = await this.nextcloudService.uploadFile(file.path, fileRemotePath);
+  const fileUrl = await generatePublicLink(uploadedFilePath);
+
+  let thumbnailUrl: string | undefined;
+  if (thumbnail) {
+    const uploadedThumbPath = await this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath!);
+    thumbnailUrl = await generatePublicLink(uploadedThumbPath);
+  }
+
+  let totalPages: number | undefined;
+  if (extension === 'pdf') {
+    try {
+      totalPages = await getPdfTotalPages(file.path);
+    } catch (error) {
+      console.error('Error reading PDF pages:', error);
+    }
+  }
+
+
+let resourceType: 'pdf' | 'video' | 'audio' = 'pdf';
+if (extension === 'mp4' || extension === 'mov' || extension === 'mkv') resourceType = 'video';
+else if (extension === 'mp3' || extension === 'wav') resourceType = 'audio';
+
+const chapter = this.chapterRepo.create({
+  chapterNumber: body.chapterNumber,
+  fileUrl,
+  thumbnail: thumbnailUrl,
+  totalPages,
+  resourceType, 
+  book,
+});
+
 
   return this.chapterRepo.save(chapter);
 }
-
 
 }

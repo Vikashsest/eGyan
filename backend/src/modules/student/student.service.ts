@@ -29,7 +29,6 @@ export class StudentService {
 
     @InjectRepository(StudentActivity)
     private readonly studentActivityRepo: Repository<StudentActivity>,
-
     @InjectRepository(Concern)
     private readonly concernRepo: Repository<Concern>,
     @InjectRepository(BookProgress)
@@ -525,7 +524,7 @@ async getStudentProgress(userId: number) {
         user: { id: userId },
         isFavorite: true,
       },
-      relations: ['book'],
+      relations: ['book','chapter'],
     });
 
     return favoriteActivities.map((act) => ({
@@ -552,38 +551,71 @@ async getStudentProgress(userId: number) {
       ])
       .getMany();
   }
-  async toggleFavoriteStatus(userId: number, bookId: number) {
+async toggleFavoriteStatus(userId: number, bookId: number) {
     const activityRepo = this.studentActivityRepo;
 
     const existing = await activityRepo.findOne({
       where: { user: { id: userId }, book: { id: bookId } },
-      relations: ['book', 'user'],
+      relations: ['book', 'user','chapter'],
     });
 
     if (existing) {
       existing.isFavorite = !existing.isFavorite;
       return await activityRepo.save(existing);
     } else {
-      const book = await this.bookRepo.findOne({ where: { id: bookId } });
+      // const book = await this.bookRepo.findOne({ where: { id: bookId } });
       
-      if (!book || !book.resourceType) {
-        throw new NotFoundException('Book not found or missing resourceType');
-      }
+      // if (!book || !chapter.resourceType) {
+      //   throw new NotFoundException('Book not found or missing resourceType');
+      // }
 
-      const resourceType = book.resourceType.toUpperCase();
-      if (!Object.values(ResourceType).includes(resourceType as ResourceType)) {
-        throw new BadRequestException(`Invalid resourceType: ${resourceType}`);
-      }
+      // const resourceType = book.resourceType.toUpperCase();
+      // if (!Object.values(ResourceType).includes(resourceType as ResourceType)) {
+      //   throw new BadRequestException(`Invalid resourceType: ${resourceType}`);
+      // }
 
-      const newActivity = this.studentActivityRepo.create({
-        user: { id: userId },
-        book: { id: bookId },
-        activityType: ActivityType.FAVORITE,
-        resourceTitle: book.bookName,
-        isFavorite: true,
-        resourceType: resourceType as ResourceType,
-      });
-      return await activityRepo.save(newActivity);
+      // const newActivity = this.studentActivityRepo.create({
+      //   user: { id: userId },
+      //   book: { id: bookId },
+      //   activityType: ActivityType.FAVORITE,
+      //   resourceTitle: book.bookName,
+      //   isFavorite: true,
+      //   resourceType: resourceType as ResourceType,
+      // });
+      // return await activityRepo.save(newActivity);
+      const book = await this.bookRepo.findOne({
+  where: { id: bookId },
+  relations: ['chapters'],
+});
+
+if (!book || !book.chapters || book.chapters.length === 0) {
+  throw new NotFoundException('Book or chapters not found');
+}
+
+// Default to first chapter
+const chapter = book.chapters[0];
+
+if (!chapter.resourceType) {
+  throw new BadRequestException('Chapter missing resourceType');
+}
+
+const resourceType = chapter.resourceType.toUpperCase();
+if (!Object.values(ResourceType).includes(resourceType as ResourceType)) {
+  throw new BadRequestException(`Invalid resourceType: ${resourceType}`);
+}
+
+const newActivity = this.studentActivityRepo.create({
+  user: { id: userId },
+  book: { id: bookId },
+  chapter: { id: chapter.id }, // ✅ chapter relation bhi add karo
+  activityType: ActivityType.FAVORITE,
+  resourceTitle: book.bookName,
+  isFavorite: true,
+  resourceType: resourceType as ResourceType,
+});
+
+return await activityRepo.save(newActivity);
+
     }
   }
 
@@ -710,6 +742,7 @@ async getStudentProgress(userId: number) {
   //   return this.studentActivityRepo.save(newActivity);
   // }
 
+  
   async logActivity(userId: number, dto: LogActivityDto) {
     const {
       bookId,

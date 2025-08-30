@@ -13,6 +13,7 @@ import { NextcloudService } from '../nextcloud/nextcloud.service';
 
 import { unlink } from 'fs/promises';
 import * as path from 'path';
+import { Chapter } from '../book/entities/chapter.entity';
 @Injectable()
 export class AdminService {
   constructor(
@@ -20,6 +21,8 @@ export class AdminService {
     private readonly bookRepo: Repository<Book>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Chapter)
+    private readonly chapterRepo: Repository<Chapter>,
     @InjectRepository(Concern)
     private readonly concernRepo:Repository<Concern>,
     @InjectRepository(Student)
@@ -29,9 +32,9 @@ export class AdminService {
 
   async getDashboardStats() {
   const totalBooks = await this.bookRepo.count();
-  const totalPdf = await this.bookRepo.count({ where: { resourceType: ILike('PDF') } });
-  const totalVideos = await this.bookRepo.count({ where: { resourceType: ILike('Video') } });
-  const totalAudio = await this.bookRepo.count({ where: { resourceType: ILike('Audio') } });
+  const totalPdf = await this.chapterRepo.count({ where: { resourceType: ILike('PDF') } });
+  const totalVideos = await this.chapterRepo.count({ where: { resourceType: ILike('Video') } });
+  const totalAudio = await this.chapterRepo.count({ where: { resourceType: ILike('Audio') } });
   const totalStudents = await this.userRepo.count({ where: { role: UserRole.STUDENT } });
      
     return {

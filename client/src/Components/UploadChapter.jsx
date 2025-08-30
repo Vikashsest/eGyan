@@ -447,6 +447,7 @@ export default function UploadChapter() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [chapters, setChapters] = useState([]);
+const [resourceType, setResourceType] = useState(""); 
 
   const API_URL = import.meta.env.VITE_API_URL;
   const progressIntervalRef = useRef(null);
@@ -481,8 +482,6 @@ export default function UploadChapter() {
     try {
       setLoading(true);
       setProgress(0);
-
-      // Simulate incremental progress
       progressIntervalRef.current = setInterval(() => {
         setProgress((prev) => {
           if (prev < 95) return prev + Math.random() * 5;
@@ -494,7 +493,7 @@ export default function UploadChapter() {
       fd.append("chapterNumber", chapterNumber);
       fd.append("file", file);
       fd.append("thumbnail", thumbnail);
-
+fd.append("resourceType", resourceType); 
       const res = await fetch(`${API_URL}/books/${bookId}/chapters`, {
         method: "POST",
         body: fd,
@@ -564,6 +563,20 @@ export default function UploadChapter() {
             value={chapterNumber}
             onChange={(e) => setChapterNumber(e.target.value)}
           />
+<div className="w-full">
+  <label className="text-sm font-medium">Resource Type</label>
+  <select
+    className="w-full border border-gray-500 rounded-lg p-2 mt-1 text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+    value={resourceType}
+    onChange={(e) => setResourceType(e.target.value)}
+    required
+  >
+    <option value="">Select Resource Type</option>
+    <option value="pdf">PDF</option>
+    <option value="video">Video</option>
+    <option value="audio">Audio</option>
+  </select>
+</div>
 
           <div className="w-full">
             <label>(Pdf/Videos/Audio)</label>

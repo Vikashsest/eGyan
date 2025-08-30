@@ -1008,7 +1008,7 @@
 
 
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FlipbookPDFViewer from "./FlipbookPDFViewer";
 import { FaEdit, FaTrash, FaExpand, FaCompress } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -1026,6 +1026,9 @@ const getCleanUrl = (path) =>
   path ? path.replaceAll("\\", "/") : "";
 
 
+const getBookResourceType = (book) =>
+  book.chapters?.[0]?.resourceType || "pdf";
+
 
 
 export default function ManageBooksPage({ role, Navbar, Sidebar }) {
@@ -1036,6 +1039,8 @@ const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [bookList, setBookList] = useState([]);
   const [editData, setEditData] = useState(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+
   const [formData, setFormData] = useState({
     bookName: "",
     // chapter: "",
@@ -1044,18 +1049,29 @@ const navigate = useNavigate();
     educationLevel: "",
     language: "",
     // stateBoard: "",
-    resourceType: "",
+    // resourceType: "",
     file: null,
     thumbnail: null,
   });
- 
+const getChapterDownloadUrl = (url) => {
+  if (!url) return null;
+  if (url.includes("/index.php/s/")) {
+    if (!url.endsWith("/download")) url = url.replace(/\/+$/, "") + "/download";
+  }
+  return `${API_URL}/books/proxy/file?url=${encodeURIComponent(url)}`;
+};
+
+const chapterUrl = useMemo(() => {
+  if (!selectedChapter) return null;
+  return getChapterDownloadUrl(selectedChapter.fileUrl);
+}, [selectedChapter]);
+
+
+
   useEffect(() => {
     async function loadBooks() {
       const books = await fetchBooks();
-
-
-      
-      setBookList(books);
+         setBookList(books);
     }
     loadBooks();
   }, []);
@@ -1081,7 +1097,7 @@ const handleUpload = async (e) => {
   uploadData.append("subject", formData.subject);
   uploadData.append("educationLevel", formData.educationLevel);
   uploadData.append("language", formData.language);
-  uploadData.append("resourceType", formData.resourceType);
+  // uploadData.append("resourceType", formData.resourceType);
   if (formData.file) uploadData.append("file", formData.file);
   if (formData.thumbnail) uploadData.append("thumbnail", formData.thumbnail);
 
@@ -1154,79 +1170,85 @@ navigate(`/books/${result.id}/chapters`);
 
         <h1 className="text-2xl font-bold mb-4">📘 Manage Books</h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {bookList
-            .filter((b) =>
-              b?.bookName?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map((b) => (
-              <div
-                key={b.id}
-                className="bg-white/10 border border-white/20 rounded-2xl shadow-md p-4 flex flex-col hover:shadow-xl hover:scale-105 transition-all duration-300"
-              >
-                <div className="flex flex-col items-center gap-3">
-                  {/* Thumbnail */}
-                  <div className="relative w-full h-36  lg:h-44 bg-black/10 rounded-lg overflow-hidden">
-                    <img
-                         src={`${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(b.thumbnail + '/download')}`} 
-                      alt={b.bookName}
-                      className="w-full h-full object-contain p-2"
-                    />
-                    <span className="absolute top-2 right-2 bg-white/20 text-xs px-2 py-1 rounded-full text-white border border-white/30 backdrop-blur-sm">
-                      {b.resourceType}
-                    </span>
-                  </div>
+       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+  {bookList
+    .filter((b) =>
+      b?.bookName?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map((b) => (
+      <div
+        key={b.id}
+        className="bg-white/10 border border-white/20 rounded-2xl shadow-md p-4 flex flex-col hover:shadow-xl hover:scale-105 transition-all duration-300"
+      >
+        <div className="flex flex-col items-center gap-3">
+          {/* Thumbnail */}
+          <div className="relative w-full h-36 lg:h-44 bg-black/10 rounded-lg overflow-hidden">
+            <img
+              src={`${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(b.thumbnail + '/download')}`} 
+              alt={b.bookName}
+              className="w-full h-full object-contain p-2"
+            />
+            <span className="absolute top-2 right-2 bg-white/20 text-xs px-2 py-1 rounded-full text-white border border-white/30 backdrop-blur-sm">
+              {getViewLabel(getBookResourceType(b))}
+            </span>
+          </div>
 
-                  {/* Text Section */}
-                  <div className="text-center w-full break-words">
-                    <h3 className="text-base text-md lg:text-lg font-bold mb-1">
-                      {b.bookName}
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-300 mb-1">
-                      {b.subject}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-400">
-                      🎓 {b.educationLevel}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col mt-auto pt-2 border-t border-white/20">
-                  <button
-                    onClick={() => setViewData(b)}
-                    className="w-full text-sm sm:text-base text-blue-400 hover:text-blue-300 font-semibold "
-                  >
-                    {getViewLabel(b.resourceType)}
-                  </button>
-
-                  {role === "admin" && (
-                    <div className="flex justify-between">
-                      <button
-                        onClick={() => setEditData(b)}
-                        className="text-yellow-400 hover:text-yellow-300 text-lg"
-                      >
-                        <FaEdit />
-                      </button>
-                       <button
-                        onClick={() => navigate(`/books/${b.id}/chapters`)}
-                        className="text-green-400 hover:text-green-300 text-lg"
-                        title="Manage Chapters"
-                      >
-                        📚
-                      </button>
-                      <button
-                        onClick={() => handleDelete(b.id)}
-                        className="text-red-500 hover:text-red-400 text-lg"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+          {/* Text Section */}
+          <div className="text-center w-full break-words">
+            <h3 className="text-base text-md lg:text-lg font-bold mb-1">
+              {b.bookName}
+            </h3>
+            <p className="text-sm sm:text-base text-gray-300 mb-1">
+              {b.subject}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-400">
+              🎓 {b.educationLevel}
+            </p>
+          </div>
         </div>
+
+        {/* Actions */}
+        <div className="flex flex-col mt-auto pt-2 border-t border-white/20">
+  <button
+    onClick={() => {
+      setViewData(b);
+      setSelectedChapter(b.chapters?.[0] || null); 
+    }}
+    className="w-full text-sm sm:text-base text-blue-400 hover:text-blue-300 font-semibold"
+  >
+    {getViewLabel(getBookResourceType(b))}
+  </button>
+
+
+
+          {role === "admin" && (
+            <div className="flex justify-between mt-2">
+              <button
+                onClick={() => setEditData(b)}
+                className="text-yellow-400 hover:text-yellow-300 text-lg"
+              >
+                <FaEdit />
+              </button>
+              <button
+                onClick={() => navigate(`/books/${b.id}/chapters`)}
+                className="text-green-400 hover:text-green-300 text-lg"
+                title="Manage Chapters"
+              >
+                📚
+              </button>
+              <button
+                onClick={() => handleDelete(b.id)}
+                className="text-red-500 hover:text-red-400 text-lg"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+</div>
+
 
        {showUploadModal && (
   <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
@@ -1237,7 +1259,7 @@ navigate(`/books/${result.id}/chapters`);
 
       <form className="grid gap-4" onSubmit={handleUpload}>
         {/* Resource Type Dropdown */}
-        <div>
+        {/* <div>
           <label className="text-sm font-medium">Resource Type</label>
           <select
             name="resourceType"
@@ -1255,7 +1277,7 @@ navigate(`/books/${result.id}/chapters`);
             <option value="video">Video</option>
             <option value="audio">Audio</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Book Name */}
         <input
@@ -1472,7 +1494,7 @@ navigate(`/books/${result.id}/chapters`);
                   />
                 ))}
 
-                <div>
+                {/* <div>
                   <label className="text-sm font-medium">
                     Main File (PDF / Video / Audio)
                   </label>
@@ -1487,7 +1509,7 @@ navigate(`/books/${result.id}/chapters`);
                       }))
                     }
                   />
-                </div>
+                </div> */}
                 <div>
                   <label className="text-sm font-medium">Thumbnail Image</label>
                   <input
@@ -1531,7 +1553,7 @@ navigate(`/books/${result.id}/chapters`);
                    <h3
                     className="w-full text-sm text-blue-400 hover:text-blue-300 font-semibold"
                   >
-                    {getViewLabel(viewData.resourceType)}
+                    {getBookResourceType(viewData)}
                   </h3>
                   </h2>
                   <div className="flex items-center gap-4">
@@ -1555,40 +1577,43 @@ navigate(`/books/${result.id}/chapters`);
                 </div>
 
                 <div className="flex-1 overflow-hidden bg-black">
-                 {viewData?.resourceType?.toLowerCase() === "pdf" && viewData?.id && (
-  <FlipbookPDFViewer
+                 {getBookResourceType(viewData)?.toLowerCase() === "pdf" &&
+  viewData?.chapters?.length > 0 && (
+    <FlipbookPDFViewer
+ 
     fileUrl={viewData.chapters[0].fileUrl}
-  bookId={viewData.id} 
-
+ bookId={viewData.id} 
   />
-)}
-                  {viewData.resourceType?.toLowerCase() === "video" && (
-                    <video controls className="w-full h-full object-contain">
-                      <source
-                        src={getCleanUrl(viewData.fileUrl)}
-                        type="video/mp4"
-                      />
-                    </video>
-                  )}
 
-                  {viewData.resourceType?.toLowerCase() === "audio" && (
-                    <div className="flex flex-col items-center justify-center h-full gap-4 text-white">
-                      <img
-                        src={getCleanUrl(
-                          viewData.thumbnail || "default-audio-cover.jpg"
-                        )}
-                        alt="Thumbnail"
-                        className="w-60 h-60 object-cover rounded-lg shadow-lg"
-                      />
-                      <audio controls className="w-2/3">
-                        <source
-                          src={getCleanUrl(viewData.fileUrl)}
-                          type="audio/mpeg"
-                        />
-                      </audio>
-                    </div>
-                  )}
-                </div>
+)}
+
+{getBookResourceType(viewData)?.toLowerCase() === "video" && (
+    <video controls className="w-full h-full object-contain">
+      <source
+        src={getCleanUrl(viewData.fileUrl)}
+        type="video/mp4"
+      />
+    </video>
+)}
+
+{getBookResourceType(viewData)?.toLowerCase() === "audio" && (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-white">
+      <img
+        src={getCleanUrl(
+          viewData.thumbnail || "default-audio-cover.jpg"
+        )}
+        alt="Thumbnail"
+        className="w-60 h-60 object-cover rounded-lg shadow-lg"
+      />
+      <audio controls className="w-2/3">
+        <source
+          src={getCleanUrl(viewData.fileUrl)}
+          type="audio/mpeg"
+        />
+      </audio>
+    </div>
+)}
+</div>
               </div>
             </div>
           </div>
@@ -1597,3 +1622,4 @@ navigate(`/books/${result.id}/chapters`);
     </div>
   );
 }
+

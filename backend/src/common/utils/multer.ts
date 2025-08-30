@@ -25,6 +25,7 @@
 // };
 
 
+import { BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
@@ -39,7 +40,14 @@ export const multerConfig = {
   limits: {
     fileSize: 100 * 1024 * 1024, 
   },
+  // fileFilter: (req, file, cb) => {
+  //   cb(null, true);
+  // },
   fileFilter: (req, file, cb) => {
-    cb(null, true);
-  },
+  const allowed = /pdf|jpg|jpeg|png|mp4|mov|mp3|wav/;
+  const ext = file.originalname.split('.').pop()?.toLowerCase();
+  if (ext && allowed.test(ext)) cb(null, true);
+  else cb(new BadRequestException('Invalid file type'), false);
+},
+
 };

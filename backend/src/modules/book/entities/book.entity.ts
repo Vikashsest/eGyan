@@ -20,8 +20,8 @@ educationLevel: string;
 language: string;
 @Column({ nullable: true })
 stateBoard: string; 
-@Column({ nullable: true })
-resourceType: string;  
+// @Column({ nullable: true })
+// resourceType: string;  
 @Column({ nullable: true })
 fileUrl: string;
 @Column({ nullable: true })
