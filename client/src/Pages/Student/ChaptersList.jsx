@@ -1619,10 +1619,8 @@ import { fetchChapters } from "../../apiServices/booksApi";
 
 
 
-
-
 import { useState, useEffect, useRef } from "react";
-import { FiChevronRight, FiChevronLeft } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 import { FaExpand, FaCompress } from "react-icons/fa";
 import FlipbookPDFViewer from "../../Components/FlipbookPDFViewer";
 import { useNavigate, useParams } from "react-router-dom";
@@ -1630,72 +1628,53 @@ import { useNavigate, useParams } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ChaptersList() {
-  const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("All");
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [chapters, setChapters] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { bookId } = useParams();
-  const viewerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("flip"); 
+  const viewerRef = useRef(null);
   const navigate = useNavigate();
 
+  // Fetch chapters
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        setLoading(true);
-        const res = await fetch(`${API_URL}/books/${bookId}/chapters`, {
+        const res = await fetch(`${API_URL}/books/${bookId}/chapters/meta`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch chapters");
         const data = await res.json();
-        // const formatted = data.map((item) => {
-        //   const type = (item.resourceType || "pdf").toLowerCase();
-        //   return {
-        //     id: item.id,
-        //     chapterNumber: item.chapterNumber,
-        //     fileUrl: item.fileUrl,
-        //     proxyUrl: item.proxyUrl,
-        //     thumbnail: item.thumbnail,
-        //     thumbnailProxyUrl: item.thumbnailProxyUrl,
-        //     totalPages: item.totalPages,
-        //     resourceType: type,
-        //     title: `Chapter ${item.chapterNumber}`,
-        //     file: item.proxyUrl || item.fileUrl,
-        //     typeUpper: type.toUpperCase(),
-        //   };
-        // });
+
         const formatted = data.map((item) => {
-  const type = (item.resourceType || "pdf").toLowerCase();
+          const type = (item.resourceType || "pdf").toLowerCase();
+          let title = "";
+          if (type === "pdf") title = `Chapter ${item.chapterNumber}`;
+          else if (type === "video") title = `Lecture ${item.chapterNumber}`;
+          else if (type === "audio") title = `Audio ${item.chapterNumber}`;
+          else title = `Content ${item.chapterNumber}`;
 
-  // Title logic
-  let title = "";
-  if (type === "pdf") title = `Chapter ${item.chapterNumber}`;
-  else if (type === "video") title = `Lecture ${item.chapterNumber}`;
-  else if (type === "audio") title = `Audio ${item.chapterNumber}`;
-  else title = `Content ${item.chapterNumber}`;
-
-  return {
-    id: item.id,
-    chapterNumber: item.chapterNumber,
-    fileUrl: item.fileUrl,
-    proxyUrl: item.proxyUrl,
-    thumbnail: item.thumbnail,
-    resourceType: type,
-    title,             // ✅ dynamically set title
-    file: item.proxyUrl || item.fileUrl,
-    typeUpper: type.toUpperCase(),
-  };
-});
-
+          return {
+            id: item.id,
+            chapterNumber: item.chapterNumber,
+            fileUrl: item.fileUrl,
+            proxyUrl: item.proxyUrl,
+            thumbnail: item.thumbnail,
+            thumbnailProxyUrl: item.thumbnailProxyUrl,
+            resourceType: type,
+            title,
+            file: item.proxyUrl || item.fileUrl,
+            typeUpper: type.toUpperCase(),
+          };
+        });
 
         setChapters(formatted);
         if (formatted.length > 0) setSelectedChapter(formatted[0]);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -1703,15 +1682,9 @@ export default function ChaptersList() {
   }, [bookId]);
 
   const filtered =
-    filter === "All" ? chapters : chapters.filter((ch) => ch.typeUpper === filter);
-
-  const handlePrev = () => {
-    if (page > 1) setPage((prev) => prev - 1);
-  };
-
-  const handleNext = () => {
-    if (page < (selectedChapter?.totalPages || 50)) setPage((prev) => prev + 1);
-  };
+    filter === "All"
+      ? chapters
+      : chapters.filter((ch) => ch.typeUpper === filter);
 
   const handleFullscreen = () => {
     setIsFullscreen((prev) => !prev);
@@ -1722,10 +1695,14 @@ export default function ChaptersList() {
     if (item.thumbnail) {
       return item.thumbnail.includes("/index.php/s/")
         ? item.thumbnail + "/download"
-        : `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(item.thumbnail)}`;
+        : `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(
+            item.thumbnail
+          )}`;
     }
     if (item.fileUrl) {
-      return `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(item.fileUrl)}`;
+      return `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(
+        item.fileUrl
+      )}`;
     }
     return `data:image/svg+xml;utf8,${encodeURIComponent(
       `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='140'><rect width='100%' height='100%' fill='#e5e7eb'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9ca3af' font-family='Arial' font-size='14'>No Image</text></svg>`
@@ -1739,95 +1716,23 @@ export default function ChaptersList() {
     if (item.thumbnail) {
       el.src = item.thumbnail.includes("/index.php/s/")
         ? item.thumbnail + "/download"
-        : `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(item.thumbnail)}`;
+        : `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(
+            item.thumbnail
+          )}`;
     } else if (item.fileUrl) {
-      el.src = `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(item.fileUrl)}`;
+      el.src = `${API_URL}/books/proxy/thumbnail?url=${encodeURIComponent(
+        item.fileUrl
+      )}`;
     }
   };
 
   return (
-    <div
-      className={`flex h-screen bg-[#fdf6f2] dark:bg-gray-900 transition-colors duration-300 ${
-        isFullscreen ? "overflow-hidden" : ""
-      }`}
-    >
-      {/* Viewer */}
-      <div
-        ref={viewerRef}
-        className={`flex-1 flex flex-col items-center justify-center relative transition-all duration-300 ${
-          isFullscreen ? "fixed top-0 left-0 w-full h-full z-50 p-4 bg-[#fdf6f2] dark:bg-gray-900" : "border-r dark:border-gray-700 p-4"
-        }`}
-      >
-        {/* Page Controls */}
-        <div className="absolute top-2 right-2 flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 px-2 py-1 rounded shadow z-50">
-          <button
-            onClick={handlePrev}
-            className="p-1 bg-white dark:bg-gray-800 dark:text-gray-200 shadow rounded"
-          >
-            <FiChevronLeft size={16} />
-          </button>
-          <span className="text-xs text-gray-700 dark:text-gray-200">{page}</span>
-          <button
-            onClick={handleNext}
-            className="p-1 bg-white dark:bg-gray-800 dark:text-gray-200 shadow rounded"
-          >
-            <FiChevronRight size={16} />
-          </button>
-        </div>
-
-        {/* Flipbook / media viewer */}
-        <div
-          className={`flex flex-col items-center justify-center shadow-md rounded-lg text-center overflow-hidden transition-all duration-300 ${
-            isFullscreen ? "w-full h-full" : "w-[85%] h-[75%] p-6 bg-[#d2dcf3] dark:bg-gray-700"
-          }`}
-        >
-          {loading ? (
-            <p className="text-gray-600 dark:text-gray-300">Loading chapters...</p>
-          ) : error ? (
-            <p className="text-red-500">{error}</p>
-          ) : selectedChapter ? (
-            <>
-              {selectedChapter.resourceType === "pdf" ? (
-                <FlipbookPDFViewer
-                  key={selectedChapter.id}
-                  chapter={selectedChapter}
-                  page={page}
-                  setPage={setPage}
-                  isFullscreen={isFullscreen}
-                />
-              ) : selectedChapter.resourceType === "video" ? (
-                <video key={selectedChapter.id} controls className="w-full h-full object-contain">
-                  <source src={selectedChapter.file} type="video/mp4" />
-                </video>
-              ) : selectedChapter.resourceType === "audio" ? (
-                <audio key={selectedChapter.id} controls className="w-full">
-                  <source src={selectedChapter.file} type="audio/mpeg" />
-                </audio>
-              ) : (
-                <p className="text-gray-700 dark:text-gray-200">Unsupported Content</p>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-700 dark:text-gray-200">Select a chapter</p>
-          )}
-        </div>
-
-        {/* Fullscreen toggle */}
-        <div className="absolute bottom-3 right-3 z-50">
-          <button
-            onClick={handleFullscreen}
-            className="p-2 bg-white dark:bg-gray-800 dark:text-gray-200 shadow rounded"
-          >
-            {isFullscreen ? <FaCompress /> : <FaExpand />}
-          </button>
-        </div>
-      </div>
-
-      {/* Right panel - hide in fullscreen */}
-      {!isFullscreen && (
-        <div className="w-[320px] bg-white dark:bg-gray-800 p-4 flex flex-col shadow-lg overflow-y-auto">
-          {/* Back button outside fullscreen */}
-          <div className="mb-4">
+    <div className="flex h-screen bg-[#fdf6f2] dark:bg-gray-900 transition-colors duration-300">
+      {/* Main Viewer */}
+      <div className="flex-1 flex flex-col relative">
+        {/* Back button */}
+        {!isFullscreen && (
+          <div className="absolute top-3 left-3 flex items-center gap-3 z-50">
             <button
               onClick={() => navigate(-1)}
               className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 dark:text-white shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
@@ -1835,65 +1740,235 @@ export default function ChaptersList() {
               ⬅ Back
             </button>
           </div>
+        )}
 
-          {/* Filter Tabs */}
-          <div className="flex justify-between mb-4">
-            {["All", "PDF", "VIDEO", "AUDIO"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilter(tab)}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  filter === tab
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+        {/* Mobile menu */}
+        {!isFullscreen && (
+          <div className="absolute top-3 right-3 flex items-center gap-2 z-40 lg:hidden">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 rounded bg-gray-200 dark:bg-gray-700 dark:text-white shadow hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              <FiMenu size={20} />
+            </button>
           </div>
+        )}
 
-          {/* Chapter List */}
-          <div className="flex flex-col gap-3">
-            {filtered.length === 0 ? (
-              <p className="text-gray-400 text-sm dark:text-gray-300">No {filter} content found</p>
-            ) : (
-              filtered.map((item) => {
-                const thumbSrc = getThumbSrc({
-                  thumbnailProxyUrl: item.thumbnailProxyUrl,
-                  thumbnail: item.thumbnail,
-                  fileUrl: item.fileUrl,
-                });
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setSelectedChapter(item);
-                      setPage(1);
-                    }}
-                    className={`flex items-center w-[320px] h-[60px] rounded-lg shadow-sm cursor-pointer ${
-                      selectedChapter?.id === item.id
-                        ? "bg-blue-200 dark:bg-blue-600"
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+        {/* Viewer */}
+        {selectedChapter ? (
+          <div
+            ref={viewerRef}
+            className={`flex-1 flex justify-center items-center w-full h-full p-4 relative transition-all duration-300 ${
+              isFullscreen ? "fixed inset-0 z-50 bg-black p-2" : ""
+            }`}
+          >
+            {selectedChapter.resourceType === "pdf" && (
+              <>
+                <div
+                  className={`flex-1 flex justify-center items-center w-full h-full bg-[#d2dcf3] dark:bg-gray-700 rounded-lg shadow-md relative transition-all duration-300 ${
+                    isFullscreen ? "w-full h-full p-0 bg-black" : "p-4"
+                  }`}
+                >
+                  {/* Flipbook / Scrollable PDF */}
+                  <FlipbookPDFViewer
+                    chapter={selectedChapter}
+                    isFullscreen={isFullscreen}
+                    viewMode={viewMode} 
+                    className="w-full h-full"
+                  />
+
+                  {/* Fullscreen Toggle */}
+                  <button
+                    onClick={handleFullscreen}
+                    className={`absolute bottom-3 right-3 p-2 ${
+                      isFullscreen
+                        ? "hidden"
+                        : "bg-white dark:bg-gray-800 dark:text-gray-200 shadow rounded z-20"
                     }`}
                   >
-                    <div className="w-14 h-14 flex items-center justify-center bg-gray-300 dark:bg-gray-600 rounded-l-lg overflow-hidden">
-                      <img
-                        src={thumbSrc}
-                        alt={`thumb-${item.id}`}
-                        loading="lazy"
-                        data-tried="0"
-                        onError={(e) => handleImgError(e, item)}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className="ml-3 text-sm font-medium text-gray-800 dark:text-gray-200">{item.title}</p>
-                  </div>
-                );
-              })
+                    <FaExpand />
+                  </button>
+                </div>
+
+                {isFullscreen && (
+                  <button
+                    onClick={handleFullscreen}
+                    className="fixed bottom-4 right-4 p-3 rounded-full bg-gray-700 text-white hover:bg-gray-600 z-50 shadow-lg"
+                  >
+                    <FaCompress size={15} />
+                  </button>
+                )}
+              </>
+            )}
+
+            {selectedChapter.resourceType === "video" && (
+              <video
+                key={selectedChapter.id}
+                controls
+                className="w-full h-full object-contain"
+                src={selectedChapter.file}
+              />
+            )}
+
+            {selectedChapter.resourceType === "audio" && (
+              <div className="flex flex-col items-center justify-center w-full h-full gap-4 text-white">
+                <img
+                  src={
+                    selectedChapter.thumbnailProxyUrl ||
+                    selectedChapter.thumbnail
+                  }
+                  alt="Thumbnail"
+                  className="w-60 h-60 object-cover rounded-lg shadow-lg"
+                />
+                <audio key={selectedChapter.id} controls className="w-2/3">
+                  <source src={selectedChapter.file} type="audio/mpeg" />
+                </audio>
+              </div>
             )}
           </div>
-        </div>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <p className="text-gray-700 dark:text-gray-200">Select a chapter</p>
+        )}
+      </div>
+
+      {/* Sidebar (Desktop & Mobile) */}
+      {!isFullscreen && (
+        <>
+          {/* Desktop Sidebar */}
+          <div className="hidden lg:flex w-[320px] bg-white dark:bg-gray-800 p-4 flex-col shadow-lg overflow-y-auto">
+            {/* Filter Tabs */}
+            <div className="flex justify-between mb-4">
+              {["All", "PDF", "VIDEO", "AUDIO"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setFilter(tab)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    filter === tab
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {/* Chapter List */}
+            <div className="flex flex-col gap-3">
+              {filtered.length === 0 ? (
+                <p className="text-gray-400 text-sm dark:text-gray-300">
+                  No {filter} content found
+                </p>
+              ) : (
+                filtered.map((item) => {
+                  const thumbSrc = getThumbSrc(item);
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        setSelectedChapter(item);
+                      }}
+                      className={`flex items-center w-[320px] h-[60px] rounded-lg shadow-sm cursor-pointer ${
+                        selectedChapter?.id === item.id
+                          ? "bg-blue-200 dark:bg-blue-600"
+                          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="w-14 h-14 flex items-center justify-center bg-gray-300 dark:bg-gray-600 rounded-l-lg overflow-hidden">
+                        <img
+                          src={thumbSrc}
+                          alt={`thumb-${item.id}`}
+                          loading="lazy"
+                          data-tried="0"
+                          onError={(e) => handleImgError(e, item)}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className="ml-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                        {item.title}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Sidebar */}
+          {isSidebarOpen && (
+            <div className="fixed inset-0 z-50 flex">
+              <div
+                className="flex-1 bg-black/50"
+                onClick={() => setIsSidebarOpen(false)}
+              ></div>
+              <div className="w-[280px] bg-white dark:bg-gray-800 p-4 flex flex-col shadow-lg overflow-y-auto">
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-2 rounded bg-gray-200 dark:bg-gray-700 dark:text-white shadow hover:bg-gray-300 dark:hover:bg-gray-600"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="flex justify-between mb-4">
+                  {["All", "PDF", "VIDEO", "AUDIO"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setFilter(tab)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                        filter === tab
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-3">
+                  {filtered.length === 0 ? (
+                    <p className="text-gray-400 text-sm dark:text-gray-300">
+                      No {filter} content found
+                    </p>
+                  ) : (
+                    filtered.map((item) => {
+                      const thumbSrc = getThumbSrc(item);
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedChapter(item);
+                            setIsSidebarOpen(false);
+                          }}
+                          className={`flex items-center w-full h-[60px] rounded-lg shadow-sm cursor-pointer ${
+                            selectedChapter?.id === item.id
+                              ? "bg-blue-200 dark:bg-blue-600"
+                              : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          }`}
+                        >
+                          <div className="w-14 h-14 flex items-center justify-center bg-gray-300 dark:bg-gray-600 rounded-l-lg overflow-hidden">
+                            <img
+                              src={thumbSrc}
+                              alt={`thumb-${item.id}`}
+                              loading="lazy"
+                              data-tried="0"
+                              onError={(e) => handleImgError(e, item)}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <p className="ml-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                            {item.title}
+                          </p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

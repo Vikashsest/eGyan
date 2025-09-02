@@ -76,6 +76,7 @@
 
 // export default ClassSubjects;
 
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentNavbar from "./StudentNavbar";
@@ -158,7 +159,7 @@ const ClassSubjects = () => {
                 flex flex-col items-center justify-center hover:scale-105 transform transition-all duration-300 cursor-pointer"
               >
                 <FaBookOpen className="text-yellow-400 text-4xl mb-4 drop-shadow-lg" />
-                <h3 className="text-lg font-bold">{sub}</h3>
+                <h3 className="text-lg font-bold text-center break-words leading-snug">{sub}</h3>
               </div>
             ))}
           </div>
