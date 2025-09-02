@@ -3,6 +3,7 @@ import axios from 'axios';
 import { createReadStream } from 'fs';
 import * as path from 'path';
 import { nextcloudConfig } from '../../common/utils/nextcloud.config';
+import { Readable } from 'typeorm/platform/PlatformTools';
 
 @Injectable()
 export class NextcloudService {
@@ -61,4 +62,27 @@ async uploadFile(localPath: string, remotePath: string): Promise<string> {
   }
 }
 
+
+ async uploadBuffer(buffer: Buffer, remotePath: string): Promise<string> {
+    const folderPath = path.posix.dirname(remotePath);
+    await this.ensureFolderExists(folderPath);
+
+    const url = `${nextcloudConfig.baseUrl}/remote.php/dav/files/${nextcloudConfig.username}/${remotePath}`;
+    const stream = Readable.from(buffer); // convert buffer to stream
+
+    const response = await axios.put(url, stream, {
+      auth: {
+        username: nextcloudConfig.username,
+        password: nextcloudConfig.password,
+      },
+      headers: { 'Content-Type': 'application/octet-stream' },
+      maxBodyLength: Infinity,
+    });
+
+    if (response.status >= 200 && response.status < 300) {
+      return remotePath;
+    } else {
+      throw new Error('Failed to upload buffer to Nextcloud');
+    }
+  }
 }

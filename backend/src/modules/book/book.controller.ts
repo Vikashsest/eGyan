@@ -386,44 +386,12 @@ export class BookController {
     (response.body as NodeJS.ReadableStream).pipe(res);
   }
 
-  // @Get('proxy/file')
-  // async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
-  //   if (!url) throw new BadRequestException('url query param required');
-
-  //   try {
-  //     const headers: Record<string, string> = {};
-  //     const rangeHeader = req.headers['range'] as string | undefined;
-  //     if (rangeHeader) headers['Range'] = rangeHeader;
-  //     if (url.includes('/remote.php/dav')) {
-  //       headers['Authorization'] = 'Basic ' + Buffer.from(`${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`).toString('base64');
-  //     }
-
-  //     const response = await fetch(url, { headers });
-  //     if (!response.ok || !response.body) throw new NotFoundException('File not found');
-
-  //     if (response.status === 206 || rangeHeader) {
-  //       res.status(206);
-  //       if (response.headers.get('content-range')) res.setHeader('Content-Range', response.headers.get('content-range'));
-  //     } else res.status(200);
-
-  //     res.setHeader('Accept-Ranges', 'bytes');
-  //     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
-  //     if (response.headers.get('content-length')) res.setHeader('Content-Length', response.headers.get('content-length'));
-
-  //     (response.body as NodeJS.ReadableStream).pipe(res);
-  //   } catch (err) {
-  //     console.error('Proxy error:', err.message);
-  //     throw new HttpException('Failed to fetch file', HttpStatus.BAD_GATEWAY);
-  //   }
-  // }
-
-
   @Get('proxy/file')
 async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Response) {
   if (!url) throw new BadRequestException('url query param required');
 
   try {
-    // Public share ko force direct download
+ 
     if (url.includes('/index.php/s/')) {
       if (!url.endsWith('/download')) url = url.replace(/\/+$/, '') + '/download';
     }
@@ -518,6 +486,10 @@ async proxyFile(@Query('url') url: string, @Req() req: Request, @Res() res: Resp
   }
 
   // ----------------- DYNAMIC ROUTES -----------------
+  @Get(":id/chapters/meta")
+async getChaptersMeta(@Param("id") bookId: string) {
+  return this.bookService.getChaptersMeta(+bookId);
+}
   @Get(':id/chapters')
   // @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.PRINCIPAL, UserRole.ADMIN)
   async getChapters(@Param('id') bookId: string) {
@@ -582,6 +554,86 @@ async addChapter(
   async deleteChapter(@Param('id', ParseIntPipe) id: number) {
     return this.bookService.deleteChapter(id);
   }
+
+  @Get(":id/chapters/:chapterId/file")
+async getChapterFile(
+  @Param("id") bookId: string,
+  @Param("chapterId") chapterId: string,
+  @Res() res: Response,
+  @Req() req: Request
+) {
+  const fileUrl = await this.bookService.getChapterFileStream(
+    +bookId,
+    +chapterId
+  );
+
+  if (!fileUrl) throw new NotFoundException("File not found");
+
+  const headers: Record<string, string> = {};
+  if (req.headers["range"]) headers["Range"] = req.headers["range"] as string;
+
+  if (fileUrl.includes("/remote.php/dav")) {
+    headers["Authorization"] =
+      "Basic " +
+      Buffer.from(
+        `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`
+      ).toString("base64");
+  }
+
+  const response = await fetch(fileUrl, { headers });
+  if (!response.ok || !response.body) throw new NotFoundException("File not found");
+
+  res.status(response.status);
+  res.setHeader(
+    "Content-Type",
+    response.headers.get("content-type") || "application/octet-stream"
+  );
+  if (response.headers.get("content-length"))
+    res.setHeader("Content-Length", response.headers.get("content-length"));
+  if (response.headers.get("content-range"))
+    res.setHeader("Content-Range", response.headers.get("content-range"));
+  res.setHeader("Accept-Ranges", "bytes");
+
+  (response.body as NodeJS.ReadableStream).pipe(res);
+}
+
+@Get(":id/chapters/:chapterId/proxy")
+async proxyChapterFile(
+  @Param("id") bookId: string,
+  @Param("chapterId") chapterId: string,
+  @Res() res: Response,
+  @Req() req: Request
+) {
+  const fileUrl = await this.bookService.getChapterFileStream(+bookId, +chapterId); 
+  if (!fileUrl) throw new NotFoundException("File not found");
+
+  const headers: Record<string, string> = {};
+  if (req.headers["range"]) headers["Range"] = req.headers["range"] as string;
+
+  if (fileUrl.includes("/remote.php/dav")) {
+    headers["Authorization"] =
+      "Basic " +
+      Buffer.from(
+        `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`
+      ).toString("base64");
+  }
+
+  const response = await fetch(fileUrl, { headers });
+  if (!response.ok || !response.body) throw new NotFoundException("File not found");
+
+  res.status(response.status);
+  res.setHeader(
+    "Content-Type",
+    response.headers.get("content-type") || "application/octet-stream"
+  );
+  if (response.headers.get("content-length"))
+    res.setHeader("Content-Length", response.headers.get("content-length"));
+  if (response.headers.get("content-range"))
+    res.setHeader("Content-Range", response.headers.get("content-range"));
+  res.setHeader("Accept-Ranges", "bytes");
+
+  (response.body as NodeJS.ReadableStream).pipe(res);
+}
 
   // ----------------- FIND ALL (LAST) -----------------
   @Get()
