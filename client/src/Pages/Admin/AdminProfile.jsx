@@ -35,7 +35,7 @@ export default function AdminProfile() {
   }, []);
 
   if (loading) return <p className="text-white p-6">🔄 Loading Profile...</p>;
-  if (!userData) return <p className="text-white p-6">❌ Failed to load profile.</p>;
+  // if (!userData) return <p className="text-white p-6">❌ Failed to load profile.</p>;
 
   return <ProfilePage user={userData} />;
 }

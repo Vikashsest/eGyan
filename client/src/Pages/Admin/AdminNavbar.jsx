@@ -9,6 +9,7 @@ function AdminNavbar({
   buttonLabel,
   uploadLabel = "Upload Credentials +",
   searchPlaceholder = "Search by name or email...",
+  notificationsCount = 0, 
 }) {
   const navigate = useNavigate();
 
@@ -52,16 +53,21 @@ function AdminNavbar({
           </button>
         )}
 
-        {/* 🔔 Notifications */}
-        <div className="relative">
+          <div className="relative">
           <FiBell
             className="text-xl text-gray-300 cursor-pointer"
             onClick={() => navigate("/concerns-list")}
           />
+          {notificationsCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+              {notificationsCount}
+            </span>
+          )}
         </div>
 
         {/* Avatar */}
         <div className="relative group">
+          <Link to="/admin/profile" className="block px-2 py-1">
           <img
             src="/user.png"
             alt="User"
@@ -69,15 +75,14 @@ function AdminNavbar({
             height={32}
             className="rounded-full cursor-pointer"
           />
-          <div className="absolute right-[-12px] mt-[-5px] text-white font-[600] flex justify-center opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity duration-300 z-10">
+          <div className="absolute text-white font-[600] flex justify-center opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity duration-300 z-10">
             <ul className="py-2">
               <li>
-                <Link to="/admin/profile" className="block px-2 py-1">
                   Admin
-                </Link>
               </li>
             </ul>
           </div>
+          </Link>
         </div>
       </div>
     </div>

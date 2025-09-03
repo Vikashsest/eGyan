@@ -1,4 +1,4 @@
-
+import AdminNavbar from '../Pages/Admin/AdminNavbar'
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaExpand, FaCompress, FaTrash } from "react-icons/fa";
@@ -66,7 +66,9 @@ function ConcernList() {
   };
 
   return (
+    
     <div className="min-h-screen bg-[#1a1b23] p-6">
+        
       <h1 className="text-2xl font-bold text-white mb-4">Students Concerns List</h1>
 
       <button

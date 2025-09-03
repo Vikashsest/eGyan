@@ -24,6 +24,7 @@ export default function FileManagerDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [file, setFile] = useState(null);
 
+  const [concerns, setConcerns] = useState([]); 
   const API_URL = import.meta.env.VITE_API_URL;
   const access_token = getCookie("access_token");
 
@@ -45,6 +46,26 @@ export default function FileManagerDashboard() {
     };
 
     fetchStats();
+  }, []);
+  useEffect(() => {
+    const fetchConcerns = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/concerns`, {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setConcerns(data);
+        }
+      } catch (err) {
+        console.error("Error fetching concerns:", err);
+      }
+    };
+
+    fetchConcerns();
   }, []);
 
   const handleFileUpload = async (e) => {
@@ -76,7 +97,7 @@ export default function FileManagerDashboard() {
       <Sidebar />
 
       <main className="pl-[280px] py-6 pr-5 w-full">
-        <AdminNavbar onUpload={() => setShowUploadModal(true)} />
+        <AdminNavbar onUpload={() => setShowUploadModal(true)}notificationsCount={concerns.length}  />
 
         <div className="p-2 mb-5">
           <WelcomeHeading />
