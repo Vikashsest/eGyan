@@ -627,63 +627,9 @@ async deleteChapter(chapterId: number): Promise<{ message: string }> {
 
 
 //deplyed
-// async addChapter(
-//   bookId: number,
-//   body: { chapterNumber: number ,resourceType?: 'pdf' | 'video' | 'audio'},
-//   file?: Express.Multer.File,
-//   thumbnail?: Express.Multer.File,
-// ) {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-//   if (!file) throw new BadRequestException('Chapter file is required');
-
- 
-//   const extension = file.originalname.split('.').pop()?.toLowerCase();
-//   let fileRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.${extension}`;
-//   let thumbRemotePath: string | undefined;
-//   if (thumbnail) {
-//     thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
-//   }
-
-//   const uploadedFilePath = await this.nextcloudService.uploadFile(file.path, fileRemotePath);
-//   const fileUrl = await generatePublicLink(uploadedFilePath);
-
-//   let thumbnailUrl: string | undefined;
-//   if (thumbnail) {
-//     const uploadedThumbPath = await this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath!);
-//     thumbnailUrl = await generatePublicLink(uploadedThumbPath);
-//   }
-
-//   let totalPages: number | undefined;
-//   if (extension === 'pdf') {
-//     try {
-//       totalPages = await getPdfTotalPages(file.path);
-//     } catch (error) {
-//       console.error('Error reading PDF pages:', error);
-//     }
-//   }
-
-
-// let resourceType: 'pdf' | 'video' | 'audio' = 'pdf';
-// if (extension === 'mp4' || extension === 'mov' || extension === 'mkv') resourceType = 'video';
-// else if (extension === 'mp3' || extension === 'wav') resourceType = 'audio';
-
-// const chapter = this.chapterRepo.create({
-//   chapterNumber: body.chapterNumber,
-//   fileUrl,
-//   thumbnail: thumbnailUrl,
-//   totalPages,
-//   resourceType, 
-//   book,
-// });
-
-
-//   return this.chapterRepo.save(chapter);
-// }
-
 async addChapter(
   bookId: number,
-  body: { chapterNumber: number; resourceType?: 'pdf' | 'video' | 'audio' },
+  body: { chapterNumber: number ,resourceType?: 'pdf' | 'video' | 'audio'},
   file?: Express.Multer.File,
   thumbnail?: Express.Multer.File,
 ) {
@@ -691,52 +637,106 @@ async addChapter(
   if (!book) throw new NotFoundException('Book not found');
   if (!file) throw new BadRequestException('Chapter file is required');
 
-  // ✅ extension always string
-  const extension = file.originalname.split('.').pop()?.toLowerCase() || '';
-  const fileRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.${extension}`;
-
+ 
+  const extension = file.originalname.split('.').pop()?.toLowerCase();
+  let fileRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.${extension}`;
   let thumbRemotePath: string | undefined;
   if (thumbnail) {
     thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
   }
 
-  // ✅ Upload file
-  const uploadedFilePath = await this.nextcloudService.uploadBuffer(file.buffer, fileRemotePath);
+  const uploadedFilePath = await this.nextcloudService.uploadFile(file.path, fileRemotePath);
   const fileUrl = await generatePublicLink(uploadedFilePath);
 
-  // ✅ Upload thumbnail
   let thumbnailUrl: string | undefined;
   if (thumbnail) {
-    const uploadedThumbPath = await this.nextcloudService.uploadBuffer(thumbnail.buffer, thumbRemotePath!);
+    const uploadedThumbPath = await this.nextcloudService.uploadFile(thumbnail.path, thumbRemotePath!);
     thumbnailUrl = await generatePublicLink(uploadedThumbPath);
   }
 
-  // ✅ PDF page count (path se pass karo, buffer nahi)
   let totalPages: number | undefined;
   if (extension === 'pdf') {
     try {
-      totalPages = await getPdfTotalPages(file.path); 
+      totalPages = await getPdfTotalPages(file.path);
     } catch (error) {
       console.error('Error reading PDF pages:', error);
     }
   }
 
-  // ✅ Resource type detection
-  let resourceType: 'pdf' | 'video' | 'audio' = 'pdf';
-  if (['mp4', 'mov', 'mkv'].includes(extension)) resourceType = 'video';
-  else if (['mp3', 'wav'].includes(extension)) resourceType = 'audio';
 
-  const chapter = this.chapterRepo.create({
-    chapterNumber: body.chapterNumber,
-    fileUrl,
-    thumbnail: thumbnailUrl,
-    totalPages,
-    resourceType,
-    book,
-  });
+let resourceType: 'pdf' | 'video' | 'audio' = 'pdf';
+if (extension === 'mp4' || extension === 'mov' || extension === 'mkv') resourceType = 'video';
+else if (extension === 'mp3' || extension === 'wav') resourceType = 'audio';
+
+const chapter = this.chapterRepo.create({
+  chapterNumber: body.chapterNumber,
+  fileUrl,
+  thumbnail: thumbnailUrl,
+  totalPages,
+  resourceType, 
+  book,
+});
+
 
   return this.chapterRepo.save(chapter);
 }
+
+// async addChapter(
+//   bookId: number,
+//   body: { chapterNumber: number; resourceType?: 'pdf' | 'video' | 'audio' },
+//   file?: Express.Multer.File,
+//   thumbnail?: Express.Multer.File,
+// ) {
+//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
+//   if (!book) throw new NotFoundException('Book not found');
+//   if (!file) throw new BadRequestException('Chapter file is required');
+
+//   // ✅ extension always string
+//   const extension = file.originalname.split('.').pop()?.toLowerCase() || '';
+//   const fileRemotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.${extension}`;
+
+//   let thumbRemotePath: string | undefined;
+//   if (thumbnail) {
+//     thumbRemotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
+//   }
+
+//   // ✅ Upload file
+//   const uploadedFilePath = await this.nextcloudService.uploadBuffer(file.buffer, fileRemotePath);
+//   const fileUrl = await generatePublicLink(uploadedFilePath);
+
+//   // ✅ Upload thumbnail
+//   let thumbnailUrl: string | undefined;
+//   if (thumbnail) {
+//     const uploadedThumbPath = await this.nextcloudService.uploadBuffer(thumbnail.buffer, thumbRemotePath!);
+//     thumbnailUrl = await generatePublicLink(uploadedThumbPath);
+//   }
+
+//   // ✅ PDF page count (path se pass karo, buffer nahi)
+//   let totalPages: number | undefined;
+//   if (extension === 'pdf') {
+//     try {
+//       totalPages = await getPdfTotalPages(file.path); 
+//     } catch (error) {
+//       console.error('Error reading PDF pages:', error);
+//     }
+//   }
+
+//   // ✅ Resource type detection
+//   let resourceType: 'pdf' | 'video' | 'audio' = 'pdf';
+//   if (['mp4', 'mov', 'mkv'].includes(extension)) resourceType = 'video';
+//   else if (['mp3', 'wav'].includes(extension)) resourceType = 'audio';
+
+//   const chapter = this.chapterRepo.create({
+//     chapterNumber: body.chapterNumber,
+//     fileUrl,
+//     thumbnail: thumbnailUrl,
+//     totalPages,
+//     resourceType,
+//     book,
+//   });
+
+//   return this.chapterRepo.save(chapter);
+// }
 
 async getChaptersMeta(bookId: number) {
   const book = await this.bookrepo.findOne({ where: { id: bookId } });

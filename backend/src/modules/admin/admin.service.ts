@@ -138,23 +138,27 @@ async getSchoolOverview(){
 
 
 async importUsersFromFile(filePath: string) {
-  // 1. Parse Excel File first
   const workbook = XLSX.readFile(filePath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rawData = XLSX.utils.sheet_to_json(sheet);
 
+  // Normalize keys (lowercase + trim)
   const data = rawData.map((row: any) => {
     const normalized: any = {};
     Object.keys(row).forEach((key) => {
-      normalized[key.toLowerCase()] = row[key];
+      if (key) {
+        normalized[key.toLowerCase().trim()] = row[key];
+      }
     });
     return normalized;
   });
 
   console.log('Parsed Excel Data:', data);
 
-  // 2. Prepare user entities
   const usersToInsert: User[] = [];
+  const skippedRows: any[] = [];
+
+  const validRoles = ["admin", "teacher", "student"];
 
   for (const row of data) {
     const r = row as {
@@ -164,23 +168,54 @@ async importUsersFromFile(filePath: string) {
       role?: string;
       subject?: string;
       dob?: string;
-      isactive?: boolean;
+      isactive?: boolean | string | number;
     };
 
-    const { name, email, password, role, subject, dob, isactive } = r;
+    let { name, email, password, role, subject, dob, isactive } = r;
 
-    if (!email || !password || !name || !role) continue;
+    if (!email || !password || !name || !role) {
+      skippedRows.push({ row, reason: "Missing required field" });
+      continue;
+    }
 
+    // Convert to lowercase + trim
+    name = name.toString().trim();
+    email = email.toString().trim().toLowerCase();
+    role = role.toString().trim().toLowerCase();
+    // subject = subject ? subject.toString().trim() : null;
+
+    if (!validRoles.includes(role)) {
+      skippedRows.push({ row, reason: "Invalid role" });
+      continue;
+    }
+
+    // Password hash
     const hashedPassword = await bcrypt.hash(password.toString(), 10);
 
+    // DOB conversion
+    let dobDate: Date | null = null;
+    if (dob) {
+      const tempDate = new Date(dob);
+      dobDate = isNaN(tempDate.getTime()) ? null : tempDate;
+    }
+
+    // isActive conversion
+    const isActiveVal =
+      isactive === true ||
+      isactive === "TRUE" ||
+      isactive === 1 ||
+      isactive === "1"
+        ? true
+        : false;
+
     const user: User = this.userRepo.create({
-      name: name!,
-      email: email!,
+      name,
+      email,
       password: hashedPassword,
-      role: role!.toLowerCase() as any,
-      subject: subject || null,
-      dob: dob ? new Date(dob) : null,
-      isActive: isactive !== undefined ? Boolean(isactive) : true,
+      role: role as any,
+      subject,
+      dob: dobDate,
+      isActive: isactive !== undefined ? isActiveVal : true,
     });
 
     usersToInsert.push(user);
@@ -207,6 +242,8 @@ async importUsersFromFile(filePath: string) {
 
   return {
     message: `${usersToInsert.length} users uploaded successfully`,
+    skipped: skippedRows.length,
+    skippedRows,
   };
 }
 

@@ -495,27 +495,37 @@ async getStudentProgress(userId: number) {
     return `${h}h ${m}m`;
   }
 
-  async getRecentBooks(userId: number) {
-    const activities = await this.studentActivityRepo.find({
-      where: { user: { id: userId } },
-      relations: ['book'],
-      loadEagerRelations: true
-    });
+async getRecentBooks(userId: number) {
+  const activities = await this.studentActivityRepo.find({
+    where: { user: { id: userId } },
+    relations: ["book", "chapter"],
+    loadEagerRelations: true,
+  });
 
-    const recentBookActivities = activities
-      .filter((a) => a.book)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 5);
+  const recentBookActivities = activities
+    .filter((a) => a.book)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5);
 
-    return recentBookActivities.map((a) => ({
+  return recentBookActivities.map((a) => {
+    const totalPages = a.chapter?.totalPages ?? a.book?.totalPages ?? 0;
+    const pagesRead = a.pageNumber ?? 0;
+
+    // progress % nikalna per book basis pe
+    const progress =
+      totalPages > 0 ? Math.min(100, Math.round((pagesRead / totalPages) * 100)) : 0;
+
+    return {
       id: a.book?.id,
       bookName: a.resourceTitle,
       subject: a.book?.subject,
       type: a.resourceType,
       lastAccessed: a.createdAt,
+      progress, // ab har book ka apna % aayega
+    };
+  });
+}
 
-    }));
-  }
 
 
   async getFavoriteBooksList(userId: number) {
