@@ -15,11 +15,11 @@ import ChaptersList from "../Pages/Student/ChaptersList";
 export const studentRouteList = [
   {
     path: "/student/dashboard",
-    element: <StudentDashboard />
+    element: <ProtectedRoute allowedRoles={["student"]}><StudentDashboard /></ProtectedRoute>
   },
   {
     path: "/student/profile",
-    element: <StudentProfile />,
+    element: <ProtectedRoute allowedRoles={["student"]}><StudentProfile /></ProtectedRoute>
   },
   {
     path: "/student/myprogress",

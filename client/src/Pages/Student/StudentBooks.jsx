@@ -251,9 +251,11 @@ import StudentNavbar from "./StudentNavbar";
 import StudentSidebar from "./StudentSidebar";
 import { fetchBooks } from "../../apiServices/booksApi";
 import { FaBookReader } from "react-icons/fa";
+import { FiMenu } from "react-icons/fi";
 
-const EpathshalaBooks = () => {
+const Books = () => {
   const [categories, setCategories] = useState([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -276,23 +278,55 @@ const EpathshalaBooks = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#1e1f2b] text-white">
-      <StudentSidebar />
-      <main className="pl-[280px] py-6 pr-5 w-full">
+    <div className="flex min-h-screen bg-[#1e1f2b] text-white relative">
+      {/* Sidebar */}
+      <StudentSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Overlay for mobile when sidebar open */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 lg:pl-[280px] py-6 px-4 sm:px-6 w-full">
+        {/* Mobile Menu Icon */}
+        <div className="lg:hidden mb-4 flex items-center">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="text-white focus:outline-none"
+          >
+            <FiMenu size={28} />
+          </button>
+        </div>
+
         <StudentNavbar />
+
         <h2 className="text-2xl font-bold mb-6">📚 Category</h2>
 
         {categories.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            className="grid 
+              grid-cols-1  
+              md:grid-col-2 
+              lg:grid-cols-4 
+              gap-4 sm:gap-6"
+          >
             {categories.map((cat, index) => (
               <div
                 key={index}
                 onClick={() => navigate(`/classes?category=${cat}`)}
-                className="p-6 rounded-2xl shadow-lg border-2 border-white bg-[#3b3c4e] text-white
-                flex flex-col items-center justify-center hover:scale-105 transform transition-all duration-300 cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl shadow-lg border border-gray-300 
+                bg-[#3b3c4e] text-white flex flex-col items-center justify-center 
+                hover:scale-105 transform transition-all duration-300 cursor-pointer"
               >
-                <FaBookReader className="text-blue-400 text-5xl mb-4 drop-shadow-lg" />
-                <h3 className="text-lg font-bold text-white tracking-wide text-center">
+                <FaBookReader className="text-blue-400 text-4xl sm:text-5xl mb-3 sm:mb-4 drop-shadow-lg" />
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-center">
                   {cat}
                 </h3>
               </div>
@@ -306,4 +340,4 @@ const EpathshalaBooks = () => {
   );
 };
 
-export default EpathshalaBooks;
+export default Books;

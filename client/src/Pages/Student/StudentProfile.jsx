@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ProfilePage from "../../Components/ProfilePage";
+import { toast } from "react-toastify";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -18,13 +19,13 @@ export default function StudentProfile() {
         setUser(data.profile);
       } catch (err) {
         console.error("❌ Failed to fetch profile:", err);
+        toast.error("❌ Failed to fetch profile:", err)
       }
     }
 
     fetchProfile();
   }, []);
 
-  if (!user) return <div className="text-white p-6">Loading profile...</div>;
 
   return <ProfilePage user={user} />;
 }

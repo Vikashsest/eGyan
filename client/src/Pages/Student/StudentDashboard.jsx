@@ -7,6 +7,7 @@ import {
   FaHeart,
   FaBullhorn,
 } from "react-icons/fa";
+import { FiMenu } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { getCookie } from "../../utils/cookie";
 import StudentNavbar from "./StudentNavbar";
@@ -31,6 +32,7 @@ export default function DashboardMetrics() {
   });
 
   const [announcements, setAnnouncements] = useState([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function fetchMetrics() {
@@ -85,33 +87,26 @@ export default function DashboardMetrics() {
   };
 
   const items = [
-    {
-      title: "Total Time Spent",
-      icon: icons.timeSpent,
-      count: metrics.timeSpent,
-    },
-    {
-      title: "Books Completed",
-      icon: icons.booksCompleted,
-      count: metrics.booksCompleted,
-    },
-    {
-      title: "Recent Activity",
-      icon: icons.recentActivity,
-      count: metrics.recentActivity,
-    },
-    {
-      title: "Favorites",
-      icon: icons.favorites,
-      count: metrics.favorites,
-    },
+    { title: "Total Time Spent", icon: icons.timeSpent, count: metrics.timeSpent },
+    { title: "Books Completed", icon: icons.booksCompleted, count: metrics.booksCompleted },
+    { title: "Recent Activity", icon: icons.recentActivity, count: metrics.recentActivity },
+    { title: "Favorites", icon: icons.favorites, count: metrics.favorites },
   ];
 
   return (
     <div className="flex min-h-screen bg-[#1e1f2b] text-white">
-      <StudentSidebar />
+      {/* Sidebar */}
+      <StudentSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <main className="pl-[280px] py-6 pr-5 w-full">
+      {/* Main Content */}
+      <main className="flex-1 lg:pl-[280px] py-6 pr-5 w-full">
+        {/* Mobile Menu Icon */}
+        <div className="lg:hidden px-4 mb-4">
+          <button onClick={() => setIsSidebarOpen(true)} className="text-white">
+            <FiMenu size={28} />
+          </button>
+        </div>
+
         <StudentNavbar />
 
         <div className="p-4">
@@ -123,7 +118,7 @@ export default function DashboardMetrics() {
           {items.map((item, index) => (
             <div
               key={index}
-              className="p-4 rounded-xl shadow-md flex items-center gap-4 border bg-[#3b3c4e] text-white"
+              className="p-3 rounded-xl shadow-md flex items-center gap-4 border bg-[#3b3c4e] text-white"
             >
               <div>{item.icon}</div>
               <div>
@@ -133,6 +128,8 @@ export default function DashboardMetrics() {
             </div>
           ))}
         </div>
+
+        {/* Announcements */}
         <div className="mt-10 px-4">
           <h2 className="text-xl font-semibold mb-4">📌 Announcements</h2>
           <div className="space-y-4">

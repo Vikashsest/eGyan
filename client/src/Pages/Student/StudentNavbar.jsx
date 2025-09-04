@@ -40,27 +40,22 @@ function StudentNavbar({
 
         <FiBell className="text-xl text-gray-300" />
 
-        <div className="relative group">
-          <img
-            src="/user.png"
-            alt="User"
-            width={32}
-            height={32}
-            className="rounded-full cursor-pointer"
-          />
-          {/* Dropdown */}
-          <div className="absolute right-[-12px] mt-[-5px]  text-white font-[600] flex justify-center  opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-opacity duration-300 z-10">
-            <ul className="py-2">
-              <li>
-                <Link
-                  to ="/student/profile"
-                  className="block px-2 py-1"
-                >
-                  Student
-                </Link>
-              </li>
-            </ul>
-          </div>
+        <div className="flex flex-col items-center">
+          <Link
+            to="/student/profile"
+            className="flex flex-col items-center group relative"
+          >
+            <img
+              src="/user.png"
+              alt="User"
+              width={32}
+              height={32}
+              className="rounded-full cursor-pointer"
+            />
+            <span className="absolute top-full mt-1 text-white font-bold text-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              Student
+            </span>
+          </Link>
         </div>
       </div>
     </div>

@@ -5,90 +5,98 @@ import {
   FaChartLine,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import { FiX } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import Logout from "../Auth/Logout";
 
-export default function Sidebar() {
+export default function StudentSidebar({ isOpen, onClose }) {
   return (
-    <aside className="fixed top-0 left-0 h-screen w-64 bg-[#15161e] p-6 flex flex-col justify-between z-50">
-      <div>
+    <aside
+      className={`fixed top-0 left-0 h-screen w-64 bg-[#15161e] p-6 flex flex-col justify-between z-50 transform transition-transform duration-300
+      ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+    >
+      {/* Close button (only mobile/ipad) */}
+      <button
+        className="absolute top-4 right-4 text-white lg:hidden"
+        onClick={onClose}
+      >
+        <FiX size={26} />
+      </button>
+
+      <div className="flex-1 overflow-y-auto">
         <h1 className="text-2xl font-bold flex items-center space-x-2 mb-8">
           <span className="bg-blue-600 w-2.5 h-2.5 rounded-sm"></span>
           <span className="text-gray-300">Dashboard</span>
         </h1>
 
-        <nav className="space-y-6">
-          <div>
-            <ul className="space-y-5">
+        {/* Navigation */}
+        <nav>
+          <ul className="space-y-4">
+            <li>
               <Link
-                className="flex items-center space-x-2"
                 to="/student/dashboard"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
               >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaTachometerAlt />
-                  <span>Dashboard</span>
-                </li>
+                <FaTachometerAlt />
+                <span>Dashboard</span>
               </Link>
-                <Link
-                className="flex items-center space-x-2"
-                to="/students/books"
-              >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaBookOpen />
-                  <span>Study Material</span>
-                </li>
-              </Link>
+            </li>
+
+            <li>
               <Link
-                className="flex items-center space-x-2"
+                to="/students/books"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
+              >
+                <FaBookOpen />
+                <span>Study Material</span>
+              </Link>
+            </li>
+
+            <li>
+              <Link
                 to="/student/myprogress"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
               >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaChartLine />
-                  <span>My Progress</span>
-                </li>
+                <FaChartLine />
+                <span>My Progress</span>
               </Link>
-             
+            </li>
+
+            <li>
               <Link
-                className="flex items-center space-x-2"
                 to="/student/recent-read-books"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
               >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaBookOpen />
-                  <span>Recent Activity</span>
-                </li>
+                <FaBookOpen />
+                <span>Recent Activity</span>
               </Link>
+            </li>
+
+            <li>
               <Link
-                className="flex items-center space-x-2"
                 to="/student/favorites"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
               >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaFileAlt />
-                  <span>Favorites</span>
-                </li>
+                <FaFileAlt />
+                <span>Favorites</span>
               </Link>
+            </li>
+
+            <li>
               <Link
-                className="flex items-center space-x-2"
                 to="/student/raise-concern"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition"
               >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaExclamationTriangle />
-                  <span>Raise Concern</span>
-                </li>
+                <FaExclamationTriangle />
+                <span>Raise Concern</span>
               </Link>
-              {/* <Link
-                className="flex items-center space-x-2"
-                to="/students/books"
-              >
-                <li className="flex items-center space-x-2 text-gray-300">
-                  <FaBookOpen />
-                  <span>Study Material</span>
-                </li>
-              </Link> */}
-            </ul>
-          </div>
+            </li>
+          </ul>
         </nav>
       </div>
-      <div>
+
+      {/* Bottom Logout */}
+      <div className="pt-6 border-t border-gray-700">
         <Logout />
       </div>
     </aside>

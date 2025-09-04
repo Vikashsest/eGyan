@@ -83,6 +83,7 @@ import StudentNavbar from "./StudentNavbar";
 import StudentSidebar from "./StudentSidebar";
 import { fetchBooks } from "../../apiServices/booksApi";
 import { FaBookOpen, FaArrowLeft } from "react-icons/fa";
+import { FiMenu } from "react-icons/fi";
 
 // Helper function to normalize class names
 const normalizeClassName = (str) => {
@@ -96,6 +97,7 @@ const normalizeClassName = (str) => {
 const ClassSubjects = () => {
   const { className } = useParams();
   const [subjects, setSubjects] = useState([]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -133,10 +135,35 @@ const ClassSubjects = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#1e1f2b] text-white">
-      <StudentSidebar />
-      <main className="pl-[280px] py-6 pr-5 w-full">
+   <div className="flex min-h-screen bg-[#1e1f2b] text-white relative">
+      {/* Sidebar */}
+      <StudentSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Overlay for mobile when sidebar open */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 lg:pl-[280px] py-6 px-4 sm:px-6 w-full">
+        {/* Mobile Menu Icon */}
+        <div className="lg:hidden mb-4 flex items-center">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="text-white focus:outline-none"
+          >
+            <FiMenu size={28} />
+          </button>
+        </div>
+
         <StudentNavbar />
+
 
         <button
           onClick={handleBack}

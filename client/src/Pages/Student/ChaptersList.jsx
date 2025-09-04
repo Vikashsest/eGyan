@@ -364,6 +364,13 @@
 
 
 
+
+
+
+
+
+
+
 import { useState, useEffect, useRef } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
 import { FaExpand, FaCompress } from "react-icons/fa";
@@ -470,6 +477,20 @@ export default function ChaptersList() {
       )}`;
     }
   };
+
+
+    
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
 
   return (
     <div className="flex h-screen bg-[#fdf6f2] dark:bg-gray-900 transition-colors duration-300">
@@ -718,5 +739,10 @@ export default function ChaptersList() {
     </div>
   );
 }
+
+
+
+
+
 
 
