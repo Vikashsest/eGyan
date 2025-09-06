@@ -8,11 +8,9 @@ import { User } from '../user/entities/user.entity';
 import { UserRole } from '../user/entities/user.entity'; 
 import { Announcement } from '../student/entities/announcement.entity';
 import getPdfTotalPages from 'src/common/utils/Helper/pdf.parse';
-import { log } from 'console';
 import { Chapter } from './entities/chapter.entity';
 import { NextcloudService } from '../nextcloud/nextcloud.service';
 import { generatePublicLink } from 'src/common/utils/nextcloud.config';
-import { Readable } from 'stream';
 
 
 
@@ -81,19 +79,6 @@ const newBook = this.bookrepo.create({
   }
 
 
-
-// async findAll() {
-//   const books = await this.bookrepo.find({
-//     relations: ['chapters'],
-//     order: { uploadedAt: "DESC" }
-//   });
-
-//   return books.map(book => ({
-//     ...book,
-//     thumbnail: book.chapters.length > 0 ? book.chapters[0].thumbnail : null
-//   }));
-// }
-
 async findAll() {
   const books = await this.bookrepo.find({
     relations: ['chapters'],
@@ -128,34 +113,6 @@ async findAll() {
 
 
 
-
-// async findAll() {
-//   const books = await this.bookrepo.find({
-//     relations: ['chapters'],
-//     order: { uploadedAt: "DESC" }
-//   });
-
-//   return books.map(book => {
-//     const firstChapter = book.chapters[0];
-// const proxyFileUrl = firstChapter
-//       ? `${process.env.API_URL}/books/proxy/chapters/${book.id}/chapter-${firstChapter.chapterNumber}.pdf`
-//       : null;
-//     const proxyThumbnail = firstChapter
-//       ? `${process.env.API_URL}/books/proxy/thumbnails/${book.id}/chapter-${firstChapter.chapterNumber}.jpg`
-//       : null;
-//           return {
-//       ...book,
-//       fileUrl: proxyFileUrl,
-//       thumbnail: proxyThumbnail,
-//       chapters: book.chapters.map(ch => ({
-//         id: ch.id,
-//         chapterNumber: ch.chapterNumber,
-//         fileUrl: `${process.env.API_URL}/books/proxy/chapters/${book.id}/chapter-${ch.chapterNumber}.pdf`,
-//         thumbnail: `${process.env.API_URL}/books/proxy/thumbnails/${book.id}/chapter-${ch.chapterNumber}.jpg`,
-//       })),
-//     };
-//   });
-// }
 
 
 async findByUploaderId(userId: number) {
@@ -309,144 +266,8 @@ async updateBook(id: number, updateBookDto: UpdateBookDto, file?: Express.Multer
   return this.bookrepo.save(updatedBook);
 }
 
-// async addChapter(
-//   bookId: number,
-//   body: { chapterNumber: number },
-//   file?: Express.Multer.File,
-//   thumbnail?: Express.Multer.File,
-// ) {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-
-//   if (!body.chapterNumber)
-//     throw new BadRequestException('chapterNumber is required');
-
-//   const chapter = this.chapterRepo.create({
-//     chapterNumber: body.chapterNumber,
-//     book,
-//     fileUrl: file ? `uploads/${file.filename}` : undefined,
-//     thumbnail: thumbnail ? `uploads/${thumbnail.filename}` : undefined,
-//   });
-
-//   return this.chapterRepo.save(chapter);
-// }
 
 
-
-// async addChapter(
-//   bookId: number,
-//   body: { chapterNumber: number },
-//   file?: Express.Multer.File,
-//   thumbnail?: Express.Multer.File,
-// ) {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-
-//   if (!body.chapterNumber)
-//     throw new BadRequestException('chapterNumber is required');
-
-//   let totalPages: number | undefined = undefined;
-
-//   if (file) {
-//     try {
-//       // calculate PDF total pages
-//       totalPages = await getPdfTotalPages(file.path); // or `uploads/${file.filename}` if your function expects relative path
-//     } catch (error) {
-//       console.error('Error reading PDF pages for chapter:', error);
-//     }
-//   }
-
-//   const chapter = this.chapterRepo.create({
-//     chapterNumber: body.chapterNumber,
-//     book,
-//     fileUrl: file ? `uploads/${file.filename}` : undefined,
-//     thumbnail: thumbnail ? `uploads/${thumbnail.filename}` : undefined,
-//     totalPages, // save total pages
-//   });
-
-//   return this.chapterRepo.save(chapter);
-// }
-
-
-
-// async addChapter(
-//   bookId: number,
-//   body: { chapterNumber: number },
-//   file?: Express.Multer.File,
-//   thumbnail?: Express.Multer.File,
-// ): Promise<any> {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-
-//   let fileUrl: string | undefined;
-//   let thumbnailUrl: string | undefined;
-//   let totalPages: number | undefined;
-
-//   if (file) {
-//     const remotePath = `books/${bookId}/chapters/chapter-${body.chapterNumber}.pdf`;
-//     await this.nextcloudService.uploadFile(file.path, remotePath);
-
-//     // ✅ direct function call, not this.generatePublicLink
-//     fileUrl = await generatePublicLink(remotePath);
-
-//     try {
-//       totalPages = await getPdfTotalPages(file.path);
-//     } catch (error) {
-//       console.error('Error reading PDF pages:', error);
-//     }
-//   }
-
-//   if (thumbnail) {
-//     const remotePath = `books/${bookId}/chapters/thumbnails/chapter-${body.chapterNumber}.jpg`;
-//     await this.nextcloudService.uploadFile(thumbnail.path, remotePath);
-
-//     // ✅ direct function call
-//     thumbnailUrl = await generatePublicLink(remotePath);
-//   }
-
-//   const chapter = this.chapterRepo.create({
-//     chapterNumber: body.chapterNumber,
-//     fileUrl,
-//     thumbnail: thumbnailUrl,
-//     totalPages,
-//     book,
-//   });
-
-//   return this.chapterRepo.save(chapter);
-// }
-
-
-
-
-
-//   async getChaptersByBookId(bookId: number): Promise<Chapter[]> {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-
-//   return this.chapterRepo.find({
-//     where: { book: { id: bookId } },
-//     order: { chapterNumber: 'ASC' },
-
-//   });
-// }
-
-
-// async getChaptersByBookId(bookId: number): Promise<any[]> {
-//   const book = await this.bookrepo.findOne({ where: { id: bookId } });
-//   if (!book) throw new NotFoundException('Book not found');
-
-//   const chapters = await this.chapterRepo.find({
-//     where: { book: { id: bookId } },
-//     order: { chapterNumber: 'ASC' },
-//   });
-
-// return chapters.map(ch => ({
-//   ...ch,
-//   fileUrl: `${process.env.API_URL}/books/chapter-file/${bookId}/${ch.chapterName}`,
-//   thumbnail: ch.thumbnail ? ch.thumbnail : null,
-// }));
-
-// }
 
 
 async getChaptersByBookId(bookId: number): Promise<any[]> {
@@ -485,35 +306,6 @@ totalPages:ch.totalPages,
 
 }
 
-// async getChapterFileStream(bookId: number, chapterNumber: number) {
-//   const chapter = await this.chapterRepo.findOne({
-//     where: { book: { id: bookId }, chapterNumber },
-//   });
-
-//   if (!chapter || !chapter.fileUrl) {
-//     throw new NotFoundException('Chapter file not found');
-//   }
-
-//   const response = await fetch(chapter.fileUrl, {
-//     headers: {
-//       Authorization:
-//         'Basic ' +
-//         Buffer.from(
-//           `${process.env.NEXTCLOUD_USER}:${process.env.NEXTCLOUD_PASS}`,
-//         ).toString('base64'),
-//     },
-//   });
-
-//   if (!response.ok || !response.body) {
-//     throw new BadRequestException('Unable to fetch file');
-//   }
-
-//   const nodeStream = Readable.fromWeb(response.body as any);
-//   return {
-//     stream: nodeStream,
-//     contentType: response.headers.get('content-type'),
-//   };
-// }
 
 
 async getChapterFileStream(bookId: number, chapterId: number) {
