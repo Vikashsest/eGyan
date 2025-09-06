@@ -429,7 +429,7 @@ const startTimeRef = useRef(Date.now());
     setCurrentPage(1);
   }, [chapterUrl, chapter?.resourceType, chapter?.type]);
 
-  // ✅ Load PDF pages
+  // // ✅ Load PDF pages
   // useEffect(() => {
   //   if (!bookUrl || fileType !== "pdf") {
   //     setLoading(false);
@@ -473,8 +473,7 @@ const startTimeRef = useRef(Date.now());
   //   loadPdf();
   //   return () => (cancelled = true);
   // }, [bookUrl, fileType]);
-
-  // ✅ Lazy loading pages
+// ✅ Lazy loading pages
 useEffect(() => {
   if (!bookUrl || fileType !== "pdf") {
     setLoading(false);
@@ -520,10 +519,8 @@ useEffect(() => {
       renderPage(1);
 
       // Load next few pages lazily
-      const preload = [2, 3];
-      preload.forEach((p) => {
-        if (p <= pdf.numPages) renderPage(p);
-      });
+    renderPage(1);
+[2,3,4,5].forEach(p => p <= pdf.numPages && renderPage(p));
 
       // Save renderer in ref to call later
       window._renderPage = renderPage;
@@ -682,12 +679,11 @@ useEffect(() => {
                 mobileScrollSupport={true}
                 useMouseEvents={!isSinglePage}
                 ref={flipBookRef}
-                
                 onFlip={(e) => {
                   const newPage = e.data + 1; // page numbers start at 1
                   setCurrentPage(newPage);
                   setPage?.(newPage);
-if (window._renderPage) {
+  if (window._renderPage) {
       window._renderPage(newPage);
       if (newPage + 1 <= total) window._renderPage(newPage + 1);
       if (newPage - 1 >= 1) window._renderPage(newPage - 1);
@@ -786,5 +782,3 @@ if (window._renderPage) {
     </div>
   );
 }
-
-
