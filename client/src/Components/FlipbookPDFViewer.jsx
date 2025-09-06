@@ -430,49 +430,112 @@ const startTimeRef = useRef(Date.now());
   }, [chapterUrl, chapter?.resourceType, chapter?.type]);
 
   // ✅ Load PDF pages
-  useEffect(() => {
-    if (!bookUrl || fileType !== "pdf") {
-      setLoading(false);
-      return;
-    }
+  // useEffect(() => {
+  //   if (!bookUrl || fileType !== "pdf") {
+  //     setLoading(false);
+  //     return;
+  //   }
 
-    let cancelled = false;
-    const loadPdf = async () => {
-      setLoading(true);
-      try {
-        const loadingTask = pdfjsLib.getDocument(bookUrl);
-        const pdf = await loadingTask.promise;
+  //   let cancelled = false;
+  //   const loadPdf = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const loadingTask = pdfjsLib.getDocument(bookUrl);
+  //       const pdf = await loadingTask.promise;
 
-        setTotalPages?.(pdf.numPages);
-        setTotal(pdf.numPages);
+  //       setTotalPages?.(pdf.numPages);
+  //       setTotal(pdf.numPages);
 
-        const pageImages = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          if (cancelled) break;
-          const pageObj = await pdf.getPage(i);
-          const viewport = pageObj.getViewport({ scale: 1.5 });
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await pageObj.render({ canvasContext: context, viewport }).promise;
+  //       const pageImages = [];
+  //       for (let i = 1; i <= pdf.numPages; i++) {
+  //         if (cancelled) break;
+  //         const pageObj = await pdf.getPage(i);
+  //         const viewport = pageObj.getViewport({ scale: 1.5 });
+  //         const canvas = document.createElement("canvas");
+  //         const context = canvas.getContext("2d");
+  //         canvas.width = viewport.width;
+  //         canvas.height = viewport.height;
+  //         await pageObj.render({ canvasContext: context, viewport }).promise;
 
-          if (i === 1) {
-            setPageSize({ width: viewport.width, height: viewport.height });
-          }
-          pageImages.push(canvas.toDataURL());
+  //         if (i === 1) {
+  //           setPageSize({ width: viewport.width, height: viewport.height });
+  //         }
+  //         pageImages.push(canvas.toDataURL());
+  //       }
+
+  //       if (!cancelled) setPages(pageImages);
+  //     } catch (err) {
+  //       console.error("Error loading PDF:", err);
+  //     } finally {
+  //       if (!cancelled) setLoading(false);
+  //     }
+  //   };
+  //   loadPdf();
+  //   return () => (cancelled = true);
+  // }, [bookUrl, fileType]);
+
+  // ✅ Lazy loading pages
+useEffect(() => {
+  if (!bookUrl || fileType !== "pdf") {
+    setLoading(false);
+    return;
+  }
+
+  let cancelled = false;
+  const loadPdf = async () => {
+    setLoading(true);
+    try {
+      const loadingTask = pdfjsLib.getDocument(bookUrl);
+      const pdf = await loadingTask.promise;
+
+      setTotalPages?.(pdf.numPages);
+      setTotal(pdf.numPages);
+
+      // Pages array with null (placeholders)
+      setPages(new Array(pdf.numPages).fill(null));
+
+      // Function to load a single page on demand
+      const renderPage = async (pageNumber) => {
+        if (cancelled) return;
+        const pageObj = await pdf.getPage(pageNumber);
+        const viewport = pageObj.getViewport({ scale: 1.5 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await pageObj.render({ canvasContext: context, viewport }).promise;
+
+        if (pageNumber === 1) {
+          setPageSize({ width: viewport.width, height: viewport.height });
         }
 
-        if (!cancelled) setPages(pageImages);
-      } catch (err) {
-        console.error("Error loading PDF:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadPdf();
-    return () => (cancelled = true);
-  }, [bookUrl, fileType]);
+        setPages((prev) => {
+          const updated = [...prev];
+          updated[pageNumber - 1] = canvas.toDataURL();
+          return updated;
+        });
+      };
+
+      // Load first page initially
+      renderPage(1);
+
+      // Load next few pages lazily
+      const preload = [2, 3];
+      preload.forEach((p) => {
+        if (p <= pdf.numPages) renderPage(p);
+      });
+
+      // Save renderer in ref to call later
+      window._renderPage = renderPage;
+    } catch (err) {
+      console.error("Error loading PDF:", err);
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  };
+  loadPdf();
+  return () => (cancelled = true);
+}, [bookUrl, fileType]);
 
   // ✅ Flipbook Keyboard nav
   useEffect(() => {
@@ -619,11 +682,16 @@ const startTimeRef = useRef(Date.now());
                 mobileScrollSupport={true}
                 useMouseEvents={!isSinglePage}
                 ref={flipBookRef}
+                
                 onFlip={(e) => {
                   const newPage = e.data + 1; // page numbers start at 1
                   setCurrentPage(newPage);
                   setPage?.(newPage);
-
+if (window._renderPage) {
+      window._renderPage(newPage);
+      if (newPage + 1 <= total) window._renderPage(newPage + 1);
+      if (newPage - 1 >= 1) window._renderPage(newPage - 1);
+    }
                   // ✅ Log activity
                   logActivity(newPage);
 
